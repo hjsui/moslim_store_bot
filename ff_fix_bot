@@ -1,0 +1,112 @@
+import os
+import json
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+
+# ========== بياناتك ==========
+BOT_TOKEN = "توكنك_هنا"  # 👈 ضع توكن البوت المركزي الجديد هنا
+PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
+
+BOT1 = "@TOKEN_LOGIN_CK_REBOT"
+BOT2 = "@CHECK_EMAIL_TUN_REBOT"
+BOT3 = "@FF_LOGIN_SPAM_ROBOT"
+
+DATA_FILE = "users_stats.json"
+# ============================
+
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+def is_authorized(user_id):
+    return str(user_id) in load_data()
+
+def add_user(user_id, username):
+    data = load_data()
+    if str(user_id) not in data:
+        data[str(user_id)] = {"username": username, "token": 0, "email": 0, "spam": 0}
+        save_data(data)
+
+def update_stat(user_id, action):
+    data = load_data()
+    uid = str(user_id)
+    if uid in data:
+        if action == "token":
+            data[uid]["token"] += 1
+        elif action == "email":
+            data[uid]["email"] += 1
+        elif action == "spam":
+            data[uid]["spam"] += 1
+        save_data(data)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    user_id = user.id
+    username = user.username or "NoUsername"
+
+    if context.args and context.args[0] == PASSWORD:
+        add_user(user_id, username)
+        await update.message.reply_text("✅ تم التسجيل بنجاح! أهلاً بك 🤍")
+        await show_menu(update, context)
+    elif is_authorized(user_id):
+        await show_menu(update, context)
+    else:
+        await update.message.reply_text(f"🔐 هذا البوت خاص. أرسل /start {PASSWORD}")
+
+async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("🔑 توكن", callback_data="token")],
+        [InlineKeyboardButton("📧 كشف استعادة", callback_data="email")],
+        [InlineKeyboardButton("💥 سبام", callback_data="spam")],
+        [InlineKeyboardButton("📊 إحصائياتي", callback_data="stats")]
+    ]
+    await update.message.reply_text("اختر الخدمة:", reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+
+    if not is_authorized(user_id):
+        await query.edit_message_text("⛔ غير مصرح لك.")
+        return
+
+    action = query.data
+
+    if action == "token":
+        update_stat(user_id, "token")
+        await query.edit_message_text(f"📲 استخدم هذا البوت:\n{BOT1}\n✅ تم تسجيل العملية.")
+
+    elif action == "email":
+        update_stat(user_id, "email")
+        await query.edit_message_text(f"📧 استخدم هذا البوت:\n{BOT2}\n✅ تم تسجيل العملية.")
+
+    elif action == "spam":
+        update_stat(user_id, "spam")
+        await query.edit_message_text(f"💥 استخدم هذا البوت:\n{BOT3}\n✅ تم تسجيل العملية.")
+
+    elif action == "stats":
+        data = load_data()
+        uid = str(user_id)
+        if uid in data:
+            s = data[uid]
+            text = f"📊 إحصائياتك:\n🔑 توكن: {s['token']}\n📧 كشف بريد: {s['email']}\n💥 سبام: {s['spam']}"
+        else:
+            text = "لا توجد إحصائيات"
+        await query.edit_message_text(text)
+
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_handler))
+    print("✅ البوت شغال...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
