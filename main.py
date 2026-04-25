@@ -4,15 +4,6 @@ import sqlite3
 from flask import Flask
 from threading import Thread
 from datetime import datetime
-import random
-import string
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 
 # --- 1. خادم الاستمرارية ---
 app = Flask('')
@@ -37,84 +28,20 @@ bot = telebot.TeleBot(API_TOKEN)
 STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
 
 # روابط مهمة
-CHANNEL_PROOFS = "https://t.me/moslim_store1"
+CHANNEL_PROOFS = "https://t.me/moslim_store1"  # قناة إثباتات الثقة والمصداقية
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
 # مخزن الجواهر والأكواد مع الأسعار
 codes_inventory = {
-    "110": ["5586744925499605", "5510650023494411", "9330820420409597"],
-    "231": ["4808931182736381"],
-    "583": [],
-    "1188": [],
-    "2420": []
+    "110": ["5586744925499605", "5510650023494411", "9330820420409597", "6627018902595942"],
+    "231": ["4808931182736381", "0698785582111920"],
+    "583": ["9600129739749249", "9614548276115470"],
+    "1188": ["2327640609655494", "2244758579935760"],
+    "2420": ["5572361327155594"]
 }
 
 # قائمة الأسعار لتظهر للزبون
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
-
-# تخزين مؤقت لبيانات طلبات الاستعادة
-recovery_requests = {}
-
-# دوال مساعدة للخدمة الجديدة
-def generate_username():
-    return "user" + ''.join(random.choices(string.digits, k=6))
-
-def generate_password():
-    chars = string.ascii_letters + string.digits + "!@#$"
-    return ''.join(random.choices(chars, k=10))
-
-def random_country():
-    countries = ["Singapore", "Malaysia", "Indonesia", "Philippines", "Thailand"]
-    return random.choice(countries)
-
-def automate_garena_registration(email, username, password, country):
-    """الدالة التي تتحكم بالمتصفح الآلي - تعمل على Render"""
-    driver = None
-    try:
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")  # مهم لتشغيل على Render
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-        driver.get("https://sso.garena.com/universal/register?locale=en-SG")
-        time.sleep(3)
-        
-        username_field = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='Username']"))
-        )
-        username_field.send_keys(username)
-        time.sleep(1)
-        
-        pass_field = driver.find_element(By.CSS_SELECTOR, "input[type='password']")
-        pass_field.send_keys(password)
-        time.sleep(1)
-        
-        email_field = driver.find_element(By.CSS_SELECTOR, "input[type='email']")
-        email_field.send_keys(email)
-        time.sleep(1)
-        
-        country_dropdown = driver.find_element(By.CSS_SELECTOR, "select")
-        country_dropdown.click()
-        time.sleep(1)
-        
-        country_option = driver.find_element(By.XPATH, f"//option[contains(text(), '{country}')]")
-        country_option.click()
-        time.sleep(1)
-        
-        get_code_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'GET CODE')]")
-        get_code_btn.click()
-        time.sleep(3)
-        
-        driver.quit()
-        return True
-    except Exception as e:
-        print(f"خطأ: {e}")
-        if driver:
-            driver.quit()
-        return False
 
 def init_db():
     conn = sqlite3.connect('moslim_store.db')
@@ -126,7 +53,7 @@ def init_db():
 
 init_db()
 
-# --- رسالة الترحيب ---
+# --- رسالة الترحيب الجذابة قبل /start ---
 WELCOME_PREVIEW = """
 🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️
 ━━━━━━━━━━━━━━━━━━━━
@@ -137,6 +64,7 @@ WELCOME_PREVIEW = """
 🔓 *اضغط /start لتفعيل المتجر* 🔓
 """
 
+# --- رسالة الترحيب بعد التفعيل ---
 def get_welcome_message(first_name):
     return f"""
 👋🏻 *أهلاً بك، {first_name}!* 
@@ -153,18 +81,20 @@ def get_welcome_message(first_name):
 🚀 *اختر من القائمة بالأسفل لبدء التسوق!*
 """
 
+# --- القائمة الرئيسية ---
 def show_main_menu(message):
     markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     markup.row("🛍️ تسوق الآن", "🛒 الخدمات")
     markup.row("💰 إضافة رصيد", "👤 الملف الشخصي")
     markup.row("📖 طريقة الاستخدام", "📞 الدعم الفني")
-    markup.row("📢 إثباتات الثقة")
+    markup.row("📢 إثباتات الثقة")  # زر جديد
     
     bot.send_message(message.chat.id, get_welcome_message(message.from_user.first_name), 
                      reply_markup=markup, parse_mode="Markdown")
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    # إرسال الرسالة التعريفية الجذابة أولاً
     bot.send_message(message.chat.id, WELCOME_PREVIEW, parse_mode="Markdown")
     
     user_id = message.from_user.id
@@ -208,29 +138,24 @@ def handle_messages(message):
         conn.close()
         return
 
+    # زر إثباتات الثقة الجديد
     if message.text == "📢 إثباتات الثقة":
         m = types.InlineKeyboardMarkup()
         m.add(types.InlineKeyboardButton("📢 قناة الإثباتات", url=CHANNEL_PROOFS))
-        bot.send_message(message.chat.id, f"📢 *قناة الإثباتات:* [اضغط هنا]({CHANNEL_PROOFS})", reply_markup=m, parse_mode="Markdown")
+        m.add(types.InlineKeyboardButton("⭐ آراء العملاء", url=f"{CHANNEL_PROOFS}"))
+        bot.send_message(message.chat.id, 
+                         f"📢 *قناة إثباتات الثقة والمصداقية*\n━━━━━━━━━━━━\n"
+                         f"🔍 *شاهد بنفسك آراء العملاء السابقين:*\n"
+                         f"✅ أكثر من 100+ عملية موثقة\n"
+                         f"⭐ تقييم العملاء: ممتاز جداً\n\n"
+                         f"[📢 اضغط هنا لمشاهدة الإثباتات]({CHANNEL_PROOFS})", 
+                         reply_markup=m, parse_mode="Markdown")
     
     elif message.text in ["🛍️ تسوق الآن", "🛒 الخدمات"]:
         markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-        markup.add("💎 شحن جواهر فري فاير")
-        markup.add("🎮 شحن ألعاب أخرى")
-        markup.add("📧 طلب رمز تحقق بريد الاستعادة")  # الخدمة الجديدة
-        markup.add("🔙 العودة للقائمة الرئيسية")
+        markup.add("💎 شحن جواهر فري فاير", "🎮 شحن ألعاب أخرى", "🔙 العودة للقائمة الرئيسية")
         bot.send_message(message.chat.id, "🛒 *أقسام المتجر:*\n━━━━━━━━━━━━\nاختر القسم المناسب:", 
                          reply_markup=markup, parse_mode="Markdown")
-    
-    # ========== الخدمة الجديدة ==========
-    elif message.text == "📧 طلب رمز تحقق بريد الاستعادة":
-        recovery_requests[user_id] = {}
-        bot.send_message(message.chat.id, 
-                         "✉️ *خدمة طلب رمز تحقق بريد الاستعادة*\n━━━━━━━━━━━━\n"
-                         "أرسل لي بريدك الإلكتروني المرتبط بحساب فري فاير:\n\n"
-                         "⚠️ *ملاحظة:* البريد سيُستخدم فقط لإرسال رمز التحقق إليه.",
-                         parse_mode="Markdown")
-        bot.register_next_step_handler(message, process_recovery_email)
     
     elif message.text == "🎮 شحن ألعاب أخرى":
         bot.send_message(message.chat.id, 
@@ -262,101 +187,59 @@ def handle_messages(message):
     elif message.text == "📞 الدعم الفني":
         m = types.InlineKeyboardMarkup(row_width=1)
         m.add(types.InlineKeyboardButton("💬 مراسلة المدير", url=ADMIN_CONTACT))
-        bot.send_message(message.chat.id, "👨‍💻 *فريق الدعم*\n━━━━━━━━━━━━\n*اختر طريقة التواصل:*", 
+        m.add(types.InlineKeyboardButton("📢 قناة المتجر", url="https://t.me/moslim_store"))
+        m.add(types.InlineKeyboardButton("⭐ إثباتات الثقة", url=CHANNEL_PROOFS))
+        bot.send_message(message.chat.id, 
+                         "👨‍💻 *فريق الدعم*\n━━━━━━━━━━━━\n"
+                         "• الرد خلال 24 ساعة\n"
+                         "• الدعم متوفر طوال الأسبوع\n"
+                         "• للمشاكل والاستفسارات\n━━━━━━━━━━━━\n"
+                         "*اختر طريقة التواصل:*", 
                          reply_markup=m, parse_mode="Markdown")
     
     elif message.text == "💰 إضافة رصيد":
         m = types.InlineKeyboardMarkup()
         m.add(types.InlineKeyboardButton("💳 مراسلة الدعم للشحن", url=ADMIN_CONTACT))
+        m.add(types.InlineKeyboardButton("📢 شاهد الإثباتات", url=CHANNEL_PROOFS))
         bot.send_message(message.chat.id, 
                          "💰 *إضافة رصيد*\n━━━━━━━━━━━━\n"
                          "💵 *طرق الدفع المتاحة:*\n"
-                         "• CIH BANK\n• Binance (USDT)\n• PayPal\n\n"
-                         "📌 تواصل مع الدعم لإتمام الشحن.", 
+                         "• CIH BANK\n"
+                         "• Binance (USDT)\n"
+                         "• PayPal\n"
+                         "• الاتصال برقم الوا\n\n"
+                         "📌 *خطوات الشحن:*\n"
+                         "1️⃣ تواصل مع الدعم\n"
+                         "2️⃣ أرسل المبلغ المطلوب\n"
+                         "3️⃣ استلم الرصيد فوراً\n\n"
+                         "✨ *خدمة آمنة وسريعة*", 
                          reply_markup=m, parse_mode="Markdown")
     
     elif message.text == "📖 طريقة الاستخدام":
         bot.send_message(message.chat.id, 
                          "📖 *طريقة الاستخدام*\n━━━━━━━━━━━━\n"
+                         "📌 *خطوات الشراء:*\n"
                          "1️⃣ اختر الباقة المناسبة\n"
                          "2️⃣ اضغط على زر الشراء\n"
                          "3️⃣ تواصل مع الدعم للدفع\n"
                          "4️⃣ استلم كودك فوراً!\n\n"
-                         "⚡ *شحن فوري - خدمة 24 ساعة*", 
+                         "⚡ *شحن فوري - خدمة 24 ساعة*\n"
+                         "🔒 *ضمان استرجاع الأموال في حال وجود مشكلة*\n\n"
+                         "📢 *قبل الشراء:* [شاهد إثباتاتنا]({CHANNEL_PROOFS})", 
                          parse_mode="Markdown")
     
     elif message.text == "🔙 العودة للقائمة الرئيسية":
         show_main_menu(message)
     
     else:
+        # ردود ذكية للرسائل العشوائية
         bot.reply_to(message, 
                      "🤖 *مرحباً!* \n━━━━━━━━━━━━\n"
-                     "استخدم الأزرار بالأسفل للتنقل في المتجر.",
+                     "استخدم الأزرار بالأسفل للتنقل في المتجر.\n"
+                     f"📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({CHANNEL_PROOFS})", 
                      parse_mode="Markdown")
 
     conn.close()
-
-def process_recovery_email(message):
-    user_id = message.from_user.id
-    user_email = message.text.strip()
-    
-    if "@" not in user_email or "." not in user_email:
-        bot.send_message(message.chat.id, "❌ بريد إلكتروني غير صالح. أرسل بريداً صحيحاً (مثل: example@gmail.com)")
-        bot.register_next_step_handler(message, process_recovery_email)
-        return
-    
-    recovery_requests[user_id]["email"] = user_email
-    
-    # توليد بيانات مؤقتة
-    fake_username = generate_username()
-    fake_password = generate_password()
-    fake_country = random_country()
-    
-    waiting_msg = bot.send_message(message.chat.id, 
-        "🔄 *جاري معالجة طلبك...*\n━━━━━━━━━━━━\n"
-        "⏱️ يرجى الانتظار 10-20 ثانية\n"
-        "🌐 جاري الاتصال بخوادم Garena...",
-        parse_mode="Markdown")
-    
-    try:
-        success = automate_garena_registration(user_email, fake_username, fake_password, fake_country)
-        
-        if success:
-            bot.edit_message_text(
-                "✅ *تم إرسال رمز التحقق إلى بريدك الإلكتروني!* ✅\n━━━━━━━━━━━━\n\n"
-                f"📧 تم الإرسال إلى: `{user_email}`\n\n"
-                "🔑 **الخطوات التالية:**\n"
-                "1️⃣ افتح بريدك الإلكتروني (Gmail أو غيره)\n"
-                "2️⃣ ابحث عن رسالة من Garena\n"
-                "3️⃣ انسخ رمز التحقيق المكون من 6 أرقام\n"
-                "4️⃣ **أدخل الرمز في لعبة فري فاير مباشرة**\n\n"
-                "⚠️ **تنبيه أمان هام جداً:**\n"
-                "• 🔐 **لا ترسل هذا الرمز لأي شخص** - ولا حتى لي!\n"
-                "• 🎮 أدخل الرمز فقط في تطبيق فري فاير نفسه\n"
-                "• 👤 حسابك في أمان إذا أدخلته في اللعبة فقط\n\n"
-                "🌟 شكراً لاستخدامك متجر مسلم!",
-                chat_id=message.chat.id, message_id=waiting_msg.message_id, parse_mode="Markdown")
-            
-            # إشعار للمدير
-            bot.send_message(ADMIN_ID, 
-                f"🔔 *طلب رمز تحقق جديد!*\n━━━━━━━━━━━━\n"
-                f"👤 المستخدم: @{message.from_user.username}\n"
-                f"📧 البريد: {user_email}\n"
-                f"👤 الاسم المؤقت: `{fake_username}`\n"
-                f"🌍 الدولة: {fake_country}\n"
-                f"⏰ الوقت: {datetime.now().strftime('%H:%M:%S')}",
-                parse_mode="Markdown")
-        else:
-            bot.edit_message_text(
-                "❌ *حدث خطأ أثناء معالجة طلبك*\n━━━━━━━━━━━━\n"
-                "الرجاء المحاولة مرة أخرى لاحقاً.\n"
-                "إذا استمرت المشكلة، تواصل مع الدعم.",
-                chat_id=message.chat.id, message_id=waiting_msg.message_id, parse_mode="Markdown")
-                
-    except Exception as e:
-        bot.edit_message_text(
-            f"❌ *خطأ تقني*\n━━━━━━━━━━━━\n`{str(e)[:100]}`\nالرجاء المحاولة مرة أخرى.",
-            chat_id=message.chat.id, message_id=waiting_msg.message_id, parse_mode="Markdown")
 
 def show_ff_packages(message):
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -364,12 +247,14 @@ def show_ff_packages(message):
         price = prices.get(pkg, "0")
         markup.add(types.InlineKeyboardButton(f"💎 {pkg} جوهرة = {price} درهم", callback_data=f"buy_{pkg}"))
     
+    # زر إضافي لإثباتات الثقة
     markup.add(types.InlineKeyboardButton("📢 شاهد الإثباتات قبل الشراء", url=CHANNEL_PROOFS))
     
     bot.send_message(message.chat.id, 
                      "💎 *باقات شحن جواهر فري فاير*\n━━━━━━━━━━━━\n"
                      "✨ *باقات حصرية بأفضل الأسعار*\n"
-                     "⚡ *توصيل فوري خلال دقائق*\n━━━━━━━━━━━━\n"
+                     "⚡ *توصيل فوري خلال دقائق*\n"
+                     f"📢 *للتأكد من المصداقية:* [قناة الإثباتات]({CHANNEL_PROOFS})\n━━━━━━━━━━━━\n"
                      "*اختر الباقة المناسبة:*", 
                      reply_markup=markup, parse_mode="Markdown")
 
@@ -379,20 +264,26 @@ def process_purchase(call):
     if codes_inventory.get(pkg) and len(codes_inventory[pkg]) > 0:
         code = codes_inventory[pkg].pop(0)
 
+        # رسالة للزبون
         bot.send_message(call.message.chat.id, 
                          f"✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n"
                          f"💎 الكمية: {pkg} جوهرة\n"
                          f"💰 السعر: {prices[pkg]} درهم\n"
                          f"🔑 كود الشحن: `{code}`\n━━━━━━━━━━━━\n"
-                         f"📞 للاستفسار: [@MOSLIM_SHOP]({ADMIN_CONTACT})", 
+                         f"📞 للاستفسار: [@MOSLIM_SHOP]({ADMIN_CONTACT})\n"
+                         f"📢 لمشاهدة إثباتاتنا: [اضغط هنا]({CHANNEL_PROOFS})", 
                          parse_mode="Markdown")
         
+        # إشعار فوري للإدمن مع رابط القناة
         admin_msg = (f"🔔 *عملية بيع جديدة!* 🔔\n━━━━━━━━━━━━\n"
                      f"👤 الزبون: @{call.from_user.username}\n"
+                     f"🆔 المعرف: `{call.from_user.id}`\n"
                      f"📦 الفئة: {pkg} 💎\n"
                      f"💰 الثمن: {prices[pkg]} درهم\n"
                      f"🔑 الكود: `{code}`\n"
-                     f"⏰ الوقت: {datetime.now().strftime('%H:%M:%S')}")
+                     f"⏰ الوقت: {datetime.now().strftime('%H:%M:%S')}\n━━━━━━━━━━━━\n"
+                     f"✅ *تم التسليم آلياً*\n"
+                     f"📢 قناة الإثباتات: {CHANNEL_PROOFS}")
         bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
 
         conn = sqlite3.connect('moslim_store.db')
@@ -403,12 +294,13 @@ def process_purchase(call):
         conn.commit()
         conn.close()
         
-        bot.answer_callback_query(call.id, "🎉 تم الشراء بنجاح!")
+        # تأكيد للزبون بصوت منبثق
+        bot.answer_callback_query(call.id, "🎉 تم الشراء بنجاح! استلم الكود أعلاه")
     else:
-        bot.answer_callback_query(call.id, "❌ هذه الباقة غير متوفرة حالياً!", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ عذراً، هذه الباقة غير متوفرة حالياً. جرب باقة أخرى!", show_alert=True)
 
 if __name__ == "__main__":
     keep_alive()
-    print("✅ متجر مسلم شغال بنجاح!")
-    print("✅ خدمة طلب رمز تحقق بريد الاستعادة مضافة!")
+    print("✅ المتجر شغال بنجاح!")
+    print(f"📢 قناة الإثباتات: {CHANNEL_PROOFS}")
     bot.infinity_polling()
