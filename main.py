@@ -77,15 +77,7 @@ def get_verified_count():
     conn.close()
     return count
 
-def get_total_users():
-    conn = sqlite3.connect('moslim_store.db')
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM users")
-    count = c.fetchone()[0]
-    conn.close()
-    return count
-
-# ------------------- ترجمة كاملة لكل عناصر البوت -------------------
+# ------------------- ترجمة كاملة لكل النصوص -------------------
 translations = {
     "ar": {
         "shop_now": "🛍️ تسوق الآن",
@@ -104,7 +96,7 @@ translations = {
         "ask_password": "⚠️ *مـتـجـــر مـسـلـــم* 🛍️\nأدخل كلمة المرور لتفعيل المتجر:",
         "wrong_password": "❌ *كلمة مرور خاطئة!* ❌",
         "verified_success": "✅ *تم التفعيل بنجاح!* ✅\n🎉 مرحباً بك في متجر مسلم",
-        "user_count": "👥 *عدد المستخدمين المسجلين:* {}",
+        "user_count": "\n👥 *عدد المستخدمين المسجلين:* {}",
         "welcome_main": "👋🏻 *أهلاً بك، {}!*\n\n🛍️ *في متجر مسلم - وجهتك الأولى للخدمات الحصرية*\n\n⭐ *أبرز مميزات المتجر:*\n🔑 خدمات رقمية مميزة / شحن فوري\n⚡ سرعة فائقة في التنفيذ\n🔒 متجر محمي وموثق 100%\n💸 أسعار لا تقبل المنافسة\n📢 *قناة الإثباتات:* [انقر هنا لمشاهدة الثقة]({})\n🚀 *اختر من القائمة بالأسفل لبدء التسوق!*",
         "profile_text": "👤 *ملفك الشخصي*\n━━━━━━━━━━━━\n🆔 المعرف: `{}`\n📅 تاريخ التسجيل: {}\n🛍️ *سجل مشترياتك:*\n{}\n━━━━━━━━━━━━\n📢 *شكراً لثقتك بنا* ❤️",
         "support_text": "👨‍💻 *فريق الدعم*\n━━━━━━━━━━━━\n• الرد خلال 24 ساعة\n• الدعم متوفر طوال الأسبوع\n• للمشاكل والاستفسارات\n━━━━━━━━━━━━\n*اختر طريقة التواصل:*",
@@ -113,7 +105,9 @@ translations = {
         "proofs_text": "📢 *قناة إثباتات الثقة والمصداقية*\n━━━━━━━━━━━━\n🔍 *شاهد بنفسك آراء العملاء السابقين:*\n✅ أكثر من 100+ عملية موثقة\n⭐ تقييم العملاء: ممتاز جداً\n\n[📢 اضغط هنا لمشاهدة الإثباتات]({})",
         "purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n💎 الكمية: {} جوهرة\n💰 السعر: {} درهم\n🔑 كود الشحن: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "out_of_stock": "❌ عذراً، هذه الباقة غير متوفرة حالياً. جرب باقة أخرى!",
-        "confirm_purchase": "🎉 تم الشراء بنجاح! استلم الكود أعلاه"
+        "confirm_purchase": "🎉 تم الشراء بنجاح! استلم الكود أعلاه",
+        "welcome_after_lang": "🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨\n⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡\n📢 *آراء العملاء:* قناتنا مليئة بالإثباتات\n━━━━━━━━━━━━━━━━━━━━\n🔓 *اضغط /start لتفعيل المتجر* 🔓",
+        "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})"
     },
     "en": {
         "shop_now": "🛍️ Shop Now",
@@ -123,7 +117,7 @@ translations = {
         "how_to_use": "📖 How to use",
         "support": "📞 Support",
         "proofs": "📢 Trust Proofs",
-        "back": "🔙 Back to main menu",
+        "back": "🔙 Back to Main Menu",
         "ff_topup": "💎 Free Fire Diamonds Top-up",
         "other_games": "🎮 Other Games Top-up",
         "choose_section": "🛒 *Store Sections:*\n━━━━━━━━━━━━\nChoose the appropriate section:",
@@ -132,7 +126,7 @@ translations = {
         "ask_password": "⚠️ *MOSLIM STORE* 🛍️\nEnter password to activate the store:",
         "wrong_password": "❌ *Wrong password!* ❌",
         "verified_success": "✅ *Activated successfully!* ✅\n🎉 Welcome to Moslim Store",
-        "user_count": "👥 *Registered users:* {}",
+        "user_count": "\n👥 *Registered users:* {}",
         "welcome_main": "👋🏻 *Welcome, {}!*\n\n🛍️ *Moslim Store - your first destination for exclusive services*\n\n⭐ *Store features:*\n🔑 Exclusive digital services / instant top-up\n⚡ High-speed execution\n🔒 100% protected and verified store\n💸 Unbeatable prices\n📢 *Proofs channel:* [Click here to see trust]({})\n🚀 *Choose from the menu below to start shopping!*",
         "profile_text": "👤 *Your Profile*\n━━━━━━━━━━━━\n🆔 ID: `{}`\n📅 Registration date: {}\n🛍️ *Your purchases:*\n{}\n━━━━━━━━━━━━\n📢 *Thank you for trusting us* ❤️",
         "support_text": "👨‍💻 *Support Team*\n━━━━━━━━━━━━\n• Response within 24 hours\n• Support available all week\n• For issues and inquiries\n━━━━━━━━━━━━\n*Choose contact method:*",
@@ -141,20 +135,20 @@ translations = {
         "proofs_text": "📢 *Trust and Credibility Proofs Channel*\n━━━━━━━━━━━━\n🔍 *See previous customers' reviews:*\n✅ 100+ documented transactions\n⭐ Customer rating: Excellent\n\n[📢 Click here to see proofs]({})",
         "purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n💎 Quantity: {} diamonds\n💰 Price: {} MAD\n🔑 Top-up code: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 To see our proofs: [Click here]({})",
         "out_of_stock": "❌ Sorry, this package is currently unavailable. Try another package!",
-        "confirm_purchase": "🎉 Purchase successful! Get your code above"
+        "confirm_purchase": "🎉 Purchase successful! Get your code above",
+        "welcome_after_lang": "🛍️ *MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *Digital services - Instant top-up - Subscriptions* ✨\n⚡ *Speed - Trust - Unbeatable prices* ⚡\n📢 *Customer reviews:* Our channel is full of proofs\n━━━━━━━━━━━━━━━━━━━━\n🔓 *Press /start to activate the store* 🔓",
+        "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})"
     }
 }
-# أضف لغات أخرى بنفس الهيكل (fr, es, tr, de, ru, it) إن أردت
+# أضف لغات أخرى بنفس الهيكل
 
 # ------------------- إرسال صورة الترحيب واختيار اللغة -------------------
 def send_lang_selection(chat_id):
     photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
     caption = "🌍 *Please select your language / اختر لغتك*\n\n⭐ *Choose from below:*"
-    markup = types.InlineKeyboardMarkup(row_width=2)  # صفين ✅
+    markup = types.InlineKeyboardMarkup(row_width=2)
     langs = [
-        ("🇸🇦 العربية", "ar"), ("🇬🇧 English", "en"), ("🇫🇷 Français", "fr"),
-        ("🇪🇸 Español", "es"), ("🇹🇷 Türkçe", "tr"), ("🇩🇪 Deutsch", "de"),
-        ("🇷🇺 Русский", "ru"), ("🇮🇹 Italiano", "it")
+        ("🇸🇦 العربية", "ar"), ("🇬🇧 English", "en")
     ]
     for text, code in langs:
         markup.add(types.InlineKeyboardButton(text, callback_data=f"lang_{code}"))
@@ -167,23 +161,8 @@ def callback_lang(call):
     set_lang(user_id, lang)
     bot.answer_callback_query(call.id)
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    # بعد اختيار اللغة، تظهر رسالة الترحيب الجذابة
-    welcome_msg = """🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️
-━━━━━━━━━━━━━━━━━━━━
-✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨
-⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡
-📢 *آراء العملاء:* قناتنا مليئة بالإثباتات
-━━━━━━━━━━━━━━━━━━━━
-🔓 *اضغط /start لتفعيل المتجر* 🔓"""
-    if lang == 'en':
-        welcome_msg = """🛍️ *MOSLIM STORE* 🛍️
-━━━━━━━━━━━━━━━━━━━━
-✨ *Digital services - Instant top-up - Subscriptions* ✨
-⚡ *Speed - Trust - Unbeatable prices* ⚡
-📢 *Customer reviews:* Our channel is full of proofs
-━━━━━━━━━━━━━━━━━━━━
-🔓 *Press /start to activate the store* 🔓"""
-    bot.send_message(call.message.chat.id, welcome_msg, parse_mode="Markdown")
+    t = translations.get(lang, translations['ar'])
+    bot.send_message(call.message.chat.id, t["welcome_after_lang"], parse_mode="Markdown")
 
 # ------------------- القائمة الرئيسية المترجمة -------------------
 def show_main_menu(message, lang=None):
@@ -196,8 +175,7 @@ def show_main_menu(message, lang=None):
     markup.row(t["how_to_use"], t["support"])
     markup.row(t["proofs"])
     user_count = get_verified_count()
-    welcome_text = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS)
-    welcome_text += f"\n\n{t['user_count'].format(user_count)}"
+    welcome_text = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
     bot.send_message(message.chat.id, welcome_text, reply_markup=markup, parse_mode="Markdown")
 
 # ------------------- أوامر البوت -------------------
@@ -254,7 +232,6 @@ def handle_messages(message):
     if message.text == t["proofs"]:
         m = types.InlineKeyboardMarkup()
         m.add(types.InlineKeyboardButton("📢 قناة الإثباتات", url=CHANNEL_PROOFS))
-        m.add(types.InlineKeyboardButton("⭐ آراء العملاء", url=CHANNEL_PROOFS))
         bot.send_message(message.chat.id, t["proofs_text"].format(CHANNEL_PROOFS), reply_markup=m, parse_mode="Markdown")
     
     elif message.text in [t["shop_now"], t["services"]]:
@@ -271,7 +248,7 @@ def handle_messages(message):
     elif message.text == t["profile"]:
         c.execute("SELECT purchases, join_date FROM users WHERE user_id=?", (user_id,))
         purchases, join_date = c.fetchone()
-        purchases = purchases or "📭 " + ("لا توجد مشتريات بعد." if lang=='ar' else "No purchases yet.")
+        purchases = purchases or ("📭 لا توجد مشتريات بعد." if lang=='ar' else "📭 No purchases yet.")
         bot.send_message(message.chat.id, t["profile_text"].format(user_id, join_date, purchases), parse_mode="Markdown")
     
     elif message.text == t["support"]:
@@ -294,7 +271,7 @@ def handle_messages(message):
         show_main_menu(message, lang)
     
     else:
-        bot.reply_to(message, "🤖 " + ("مرحباً! استخدم الأزرار بالأسفل للتنقل." if lang=='ar' else "Hello! Use the buttons below to navigate."), parse_mode="Markdown")
+        bot.reply_to(message, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
     
     conn.close()
 
@@ -303,7 +280,6 @@ def show_ff_packages(message, lang):
     markup = types.InlineKeyboardMarkup(row_width=2)
     for pkg in codes_inventory.keys():
         price = prices[pkg]
-        # عرض الباقة باللغة المختارة (الأرقام تبقى كما هي)
         markup.add(types.InlineKeyboardButton(f"💎 {pkg} " + ("جوهرة" if lang=='ar' else "diamonds") + f" = {price} " + ("درهم" if lang=='ar' else "MAD"), callback_data=f"buy_{pkg}"))
     markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
     bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
@@ -340,5 +316,5 @@ def process_purchase(call):
 
 if __name__ == "__main__":
     keep_alive()
-    print("✅ متجر مسلم يعمل بكفاءة مع ترجمة كاملة واختيار لغة أفقي!")
+    print("✅ متجر مسلم يعمل بكفاءة مع ترجمة كاملة وتنسيق مثالي!")
     bot.infinity_polling()
