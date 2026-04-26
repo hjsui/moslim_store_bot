@@ -4,6 +4,7 @@ import sqlite3
 from flask import Flask
 from threading import Thread
 from datetime import datetime
+import time
 
 # ------------------- خادم الاستمرارية -------------------
 app = Flask('')
@@ -30,10 +31,10 @@ ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
 # ------------------- أكواد الجواهر والأسعار -------------------
 codes_inventory = {
-    "110": ["5510650023494411", "9330820420409597", "6627018902595942"],
-    "231": ["4808931182736381", "0698785582111920"],
+    "110": ["6627018902595942"],
+    "231": ["0698785582111920"],
     "583": ["9600129739749249", "9614548276115470"],
-    "1188": ["2327640609655494", "2244758579935760"],
+    "1188": ["2244758579935760"],
     "2420": ["5572361327155594"]
 }
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
@@ -45,22 +46,17 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (user_id INTEGER PRIMARY KEY, username TEXT, verified INTEGER, 
                   purchases TEXT, join_date TEXT, language TEXT DEFAULT 'ar')''')
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'ar'")
-    except:
-        pass
     conn.commit()
     conn.close()
 init_db()
 
-# ------------------- دوال مساعدة -------------------
 def get_lang(user_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT language FROM users WHERE user_id=?", (user_id,))
     res = c.fetchone()
     conn.close()
-    return res[0] if res and res[0] else 'ar'
+    return res[0] if res else 'ar'
 
 def set_lang(user_id, lang):
     conn = sqlite3.connect('moslim_store.db')
@@ -77,8 +73,8 @@ def get_verified_count():
     conn.close()
     return count
 
-# ------------------- ترجمة كاملة لكل النصوص -------------------
-translations = {
+# ------------------- ترجمة شاملة -------------------
+T = {
     "ar": {
         "shop_now": "🛍️ تسوق الآن",
         "services": "🛒 الخدمات",
@@ -140,18 +136,16 @@ translations = {
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})"
     }
 }
-# أضف لغات أخرى بنفس الهيكل
 
-# ------------------- إرسال صورة الترحيب واختيار اللغة -------------------
+# ------------------- صورة واختيار اللغة -------------------
 def send_lang_selection(chat_id):
     photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
-    caption = "🌍 *Please select your language / اختر لغتك*\n\n⭐ *Choose from below:*"
+    caption = "🌍 *Please select your language / اختر لغتك*"
     markup = types.InlineKeyboardMarkup(row_width=2)
-    langs = [
-        ("🇸🇦 العربية", "ar"), ("🇬🇧 English", "en")
-    ]
-    for text, code in langs:
-        markup.add(types.InlineKeyboardButton(text, callback_data=f"lang_{code}"))
+    markup.add(
+        types.InlineKeyboardButton("🇸🇦 العربية", callback_data="lang_ar"),
+        types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")
+    )
     bot.send_photo(chat_id, photo=photo_url, caption=caption, parse_mode="Markdown", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
@@ -161,22 +155,20 @@ def callback_lang(call):
     set_lang(user_id, lang)
     bot.answer_callback_query(call.id)
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    t = translations.get(lang, translations['ar'])
+    t = T[lang]
     bot.send_message(call.message.chat.id, t["welcome_after_lang"], parse_mode="Markdown")
 
-# ------------------- القائمة الرئيسية المترجمة -------------------
-def show_main_menu(message, lang=None):
-    if lang is None:
-        lang = get_lang(message.chat.id)
-    t = translations.get(lang, translations['ar'])
+# ------------------- القائمة الرئيسية -------------------
+def show_main_menu(message, lang):
+    t = T[lang]
     markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     markup.row(t["shop_now"], t["services"])
     markup.row(t["add_balance"], t["profile"])
     markup.row(t["how_to_use"], t["support"])
     markup.row(t["proofs"])
     user_count = get_verified_count()
-    welcome_text = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
-    bot.send_message(message.chat.id, welcome_text, reply_markup=markup, parse_mode="Markdown")
+    msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
+    bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
 # ------------------- أوامر البوت -------------------
 @bot.message_handler(commands=['start'])
@@ -186,7 +178,6 @@ def start(message):
     c = conn.cursor()
     c.execute("SELECT verified, language FROM users WHERE user_id=?", (user_id,))
     user = c.fetchone()
-    
     if not user:
         join_date = datetime.now().strftime("%Y-%m-%d %H:%M")
         c.execute("INSERT INTO users (user_id, username, verified, purchases, join_date, language) VALUES (?, ?, 0, '', ?, 'ar')",
@@ -195,13 +186,12 @@ def start(message):
         conn.close()
         send_lang_selection(message.chat.id)
         return
-    
     verified, lang = user
-    if verified == 0:
-        t = translations.get(lang, translations['ar'])
-        bot.send_message(message.chat.id, t["ask_password"], parse_mode="Markdown")
-    else:
+    t = T[lang]
+    if verified:
         show_main_menu(message, lang)
+    else:
+        bot.send_message(message.chat.id, t["ask_password"], parse_mode="Markdown")
     conn.close()
 
 @bot.message_handler(func=lambda msg: True)
@@ -215,9 +205,8 @@ def handle_messages(message):
         conn.close()
         return
     verified, lang = user
-    t = translations.get(lang, translations['ar'])
-    
-    if verified == 0:
+    t = T[lang]
+    if not verified:
         if message.text == STORE_PASSWORD:
             c.execute("UPDATE users SET verified=1 WHERE user_id=?", (user_id,))
             conn.commit()
@@ -227,60 +216,53 @@ def handle_messages(message):
             bot.reply_to(message, t["wrong_password"], parse_mode="Markdown")
         conn.close()
         return
-    
-    # ------------------- معالجة الأزرار المترجمة -------------------
-    if message.text == t["proofs"]:
-        m = types.InlineKeyboardMarkup()
-        m.add(types.InlineKeyboardButton("📢 قناة الإثباتات", url=CHANNEL_PROOFS))
-        bot.send_message(message.chat.id, t["proofs_text"].format(CHANNEL_PROOFS), reply_markup=m, parse_mode="Markdown")
-    
-    elif message.text in [t["shop_now"], t["services"]]:
-        markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-        markup.add(t["ff_topup"], t["other_games"], t["back"])
+
+    # Verified user
+    text = message.text
+    if text == t["proofs"]:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("📢 قناة الإثباتات", url=CHANNEL_PROOFS))
+        bot.send_message(message.chat.id, t["proofs_text"].format(CHANNEL_PROOFS), reply_markup=markup, parse_mode="Markdown")
+    elif text in [t["shop_now"], t["services"]]:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(t["ff_topup"])
+        markup.add(t["other_games"])
+        markup.add(t["back"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
-    
-    elif message.text == t["other_games"]:
+    elif text == t["other_games"]:
         bot.send_message(message.chat.id, t["other_games_text"], parse_mode="Markdown")
-    
-    elif message.text == t["ff_topup"]:
+    elif text == t["ff_topup"]:
         show_ff_packages(message, lang)
-    
-    elif message.text == t["profile"]:
+    elif text == t["profile"]:
         c.execute("SELECT purchases, join_date FROM users WHERE user_id=?", (user_id,))
         purchases, join_date = c.fetchone()
-        purchases = purchases or ("📭 لا توجد مشتريات بعد." if lang=='ar' else "📭 No purchases yet.")
+        if not purchases:
+            purchases = "📭 " + ("لا توجد مشتريات بعد." if lang=='ar' else "No purchases yet.")
         bot.send_message(message.chat.id, t["profile_text"].format(user_id, join_date, purchases), parse_mode="Markdown")
-    
-    elif message.text == t["support"]:
-        m = types.InlineKeyboardMarkup(row_width=1)
-        m.add(types.InlineKeyboardButton("💬 مراسلة المدير", url=ADMIN_CONTACT))
-        m.add(types.InlineKeyboardButton("📢 قناة المتجر", url="https://t.me/moslim_store"))
-        m.add(types.InlineKeyboardButton("⭐ إثباتات الثقة", url=CHANNEL_PROOFS))
-        bot.send_message(message.chat.id, t["support_text"], reply_markup=m, parse_mode="Markdown")
-    
-    elif message.text == t["add_balance"]:
-        m = types.InlineKeyboardMarkup()
-        m.add(types.InlineKeyboardButton("💳 مراسلة الدعم للشحن", url=ADMIN_CONTACT))
-        m.add(types.InlineKeyboardButton("📢 شاهد الإثباتات", url=CHANNEL_PROOFS))
-        bot.send_message(message.chat.id, t["add_balance_text"], reply_markup=m, parse_mode="Markdown")
-    
-    elif message.text == t["how_to_use"]:
+    elif text == t["support"]:
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(types.InlineKeyboardButton("💬 " + ("مراسلة المدير" if lang=='ar' else "Contact Manager"), url=ADMIN_CONTACT))
+        markup.add(types.InlineKeyboardButton("📢 " + ("قناة المتجر" if lang=='ar' else "Store Channel"), url="https://t.me/moslim_store"))
+        markup.add(types.InlineKeyboardButton("⭐ " + ("إثباتات الثقة" if lang=='ar' else "Trust Proofs"), url=CHANNEL_PROOFS))
+        bot.send_message(message.chat.id, t["support_text"], reply_markup=markup, parse_mode="Markdown")
+    elif text == t["add_balance"]:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("💳 " + ("مراسلة الدعم للشحن" if lang=='ar' else "Contact support for payment"), url=ADMIN_CONTACT))
+        bot.send_message(message.chat.id, t["add_balance_text"], reply_markup=markup, parse_mode="Markdown")
+    elif text == t["how_to_use"]:
         bot.send_message(message.chat.id, t["how_to_use_text"], parse_mode="Markdown")
-    
-    elif message.text == t["back"]:
+    elif text == t["back"]:
         show_main_menu(message, lang)
-    
     else:
-        bot.reply_to(message, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
-    
+        bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
     conn.close()
 
 def show_ff_packages(message, lang):
-    t = translations.get(lang, translations['ar'])
+    t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=2)
-    for pkg in codes_inventory.keys():
+    for pkg in codes_inventory:
         price = prices[pkg]
-        markup.add(types.InlineKeyboardButton(f"💎 {pkg} " + ("جوهرة" if lang=='ar' else "diamonds") + f" = {price} " + ("درهم" if lang=='ar' else "MAD"), callback_data=f"buy_{pkg}"))
+        markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
     markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
     bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
@@ -288,33 +270,22 @@ def show_ff_packages(message, lang):
 def process_purchase(call):
     pkg = call.data.split('_')[1]
     lang = get_lang(call.from_user.id)
-    t = translations.get(lang, translations['ar'])
-    
-    if codes_inventory.get(pkg) and len(codes_inventory[pkg]) > 0:
+    t = T[lang]
+    if pkg in codes_inventory and codes_inventory[pkg]:
         code = codes_inventory[pkg].pop(0)
         bot.send_message(call.message.chat.id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
-        
-        admin_msg = (f"🔔 *عملية بيع جديدة!* 🔔\n━━━━━━━━━━━━\n"
-                     f"👤 الزبون: @{call.from_user.username}\n"
-                     f"📦 الفئة: {pkg} 💎\n"
-                     f"💰 الثمن: {prices[pkg]} درهم\n"
-                     f"🔑 الكود: `{code}`\n"
-                     f"⏰ الوقت: {datetime.now().strftime('%H:%M:%S')}\n━━━━━━━━━━━━\n"
-                     f"✅ *تم التسليم آلياً*")
+        admin_msg = f"🔔 *بيع جديد!*\n👤 @{call.from_user.username}\n📦 {pkg}💎\n💰 {prices[pkg]} درهم\n🔑 `{code}`"
         bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-        
         conn = sqlite3.connect('moslim_store.db')
         cursor = conn.cursor()
-        cursor.execute("UPDATE users SET purchases = purchases || ? || '\n' WHERE user_id=?",
-                       (f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now().strftime('%Y-%m-%d')}", call.from_user.id))
+        cursor.execute("UPDATE users SET purchases = purchases || ? || '\n' WHERE user_id=?", (f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}", call.from_user.id))
         conn.commit()
         conn.close()
-        
         bot.answer_callback_query(call.id, t["confirm_purchase"])
     else:
         bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
 
 if __name__ == "__main__":
     keep_alive()
-    print("✅ متجر مسلم يعمل بكفاءة مع ترجمة كاملة وتنسيق مثالي!")
+    print("✅ Moslim Store is running (fully bilingual).")
     bot.infinity_polling()
