@@ -255,42 +255,34 @@ def handle_messages(message):
         return
 
     text = message.text
-    # القائمة الرئيسية -> أقسام المتجر
     if text in [t["shop_now"], t["services"]]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["ff_services"])
         markup.add(t["other_games"])
         markup.add(t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
-    # أقسام المتجر -> خدمات فري فاير
     elif text == t["ff_services"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["ff_topup"])
         markup.add(t["keys_service"])
         markup.add(t["back_to_sections"])
         bot.send_message(message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
-    # أقسام المتجر -> شحن ألعاب أخرى
     elif text == t["other_games"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["back_to_sections"])
         bot.send_message(message.chat.id, t["other_games_text"], reply_markup=markup, parse_mode="Markdown")
-    # خدمات فري فاير -> شحن جواهر
     elif text == t["ff_topup"]:
         show_ff_packages(message, lang)
-    # خدمات فري فاير -> مفاتيح الهكرات
     elif text == t["keys_service"]:
         show_keys_products(message, lang)
-    # زر العودة للقائمة الرئيسية
     elif text == t["back_to_main"]:
         show_main_menu(message, lang)
-    # زر العودة لأقسام المتجر
     elif text == t["back_to_sections"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["ff_services"])
         markup.add(t["other_games"])
         markup.add(t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
-    # باقي الأزرار
     elif text == t["proofs"]:
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(t.get("inline_proofs_btn", "📢 قناة الإثباتات"), url=CHANNEL_PROOFS))
@@ -327,21 +319,18 @@ def show_ff_packages(message, lang):
     markup.add(types.InlineKeyboardButton(t["back_to_ff_services"], callback_data="back_to_ff_services"))
     bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
-# ------------------- قائمة المنتجات (بدون زر عودة زائد) -------------------
 def show_keys_products(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=1)
     for prod_id, prod_data in keys_inventory.items():
         btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
         markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
-    # تم حذف زر "العودة لخدمات فري فاير" من هذه القائمة، لأنه موجود في لوحة التحكم السفلية
     bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
 # ------------------- عرض خيارات المدة للمنتج -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
 def choose_duration(call):
-    # استخراج prod_id بشكل صحيح (بعد "key_prod_")
-    prod_id = call.data.split('_', 2)[2]  # يقسم إلى ["key", "prod", "drip_client"]
+    prod_id = call.data.split('_', 2)[2]  # "key_prod_drip_client" -> ["key", "prod", "drip_client"]
     lang = get_lang(call.from_user.id)
     t = T[lang]
     prod_data = keys_inventory.get(prod_id)
@@ -362,7 +351,10 @@ def choose_duration(call):
 # ------------------- شراء المفتاح -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
 def execute_key_purchase(call):
-    parts = call.data.split('_')  # ["key", "buy", "drip_client", "1"]
+    parts = call.data.split('_', 3)  # "key_buy_drip_client_1" -> ["key", "buy", "drip_client", "1"]
+    if len(parts) < 4:
+        bot.answer_callback_query(call.id, "❌ خطأ في البيانات", show_alert=True)
+        return
     prod_id = parts[2]
     days = parts[3]
     lang = get_lang(call.from_user.id)
