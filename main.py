@@ -33,8 +33,8 @@ ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 codes_inventory = {
     "110": ["6627018902595942", "0226671541484161"],
     "231": ["4373710120638509", "1920413794690740"],
-    "583": ["9600129739749249", "9614548276115470", "3554007294175701"],
-    "1188": ["2244758579935760", "5091956889227839"],
+    "583": ["9614548276115470", "3554007294175701"],
+    "1188": ["5091956889227839"],
     "2420": ["7685192752918832", "6505308166203670"]
 }
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
@@ -46,11 +46,11 @@ keys_inventory = {
         "name_en": "DRIP CLIENT APKMOD 👾",
         "prices": {"1": 20, "3": 25, "7": 50, "15": 78, "30": 120},
         "codes": {
-            "1": ["TEST-KEY-1DAY-001", "TEST-KEY-1DAY-002"],
-            "3": ["TEST-KEY-3DAY-001"],
-            "7": ["TEST-KEY-7DAY-001", "TEST-KEY-7DAY-002"],
-            "15": ["TEST-KEY-15DAY-001"],
-            "30": ["TEST-KEY-30DAY-001", "TEST-KEY-30DAY-002"]
+            "1": [],
+            "3": [],
+            "7": [],
+            "15": ["4833112470"],
+            "30": ["9653536811", "6732684380", "7481744555"]
         }
     }
 }
@@ -185,7 +185,7 @@ def send_lang_selection(chat_id):
     photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
     caption = "🌍 *Please select your language / اختر لغتك*"
     markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(types.InlineKeyboardButton("🇸🇦 العربية", callback_data="lang_ar"),
+    markup.add(types.InlineKeyboardButton("🇲🇦 العربية", callback_data="lang_ar"),
                types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"))
     bot.send_photo(chat_id, photo=photo_url, caption=caption, parse_mode="Markdown", reply_markup=markup)
 
@@ -338,7 +338,7 @@ def choose_duration(call):
         return
     markup = types.InlineKeyboardMarkup(row_width=2)
     for days, price in prod_data["prices"].items():
-        markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} 💰", callback_data=f"key_buy_{prod_id}_{days}"))
+        markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 💰", callback_data=f"key_buy_{prod_id}_{days}"))
     markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
     bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
