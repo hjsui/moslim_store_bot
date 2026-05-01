@@ -40,22 +40,19 @@ codes_inventory = {
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
 
 # ------------------- مخزن مفاتيح الهكرات (منتج DRIP CLIENT) -------------------
-# يمكنك إضافة المزيد من المنتجات هنا بنفس الهيكل
 keys_inventory = {
-    "drip_client": {  # اسم المنتج (يجب أن يتطابق مع callback data)
+    "drip_client": {
         "product_name_ar": "DRIP CLIENT 🫟 APKMOD",
         "product_name_en": "DRIP CLIENT 🫟 APKMOD",
         "prices": {"1": "20", "3": "25", "7": "50", "15": "78", "30": "120"},
         "codes": {
-            "1": ["DRIP-KEY-1DAY-001", "DRIP-KEY-1DAY-002"],  # ضع أكواد حقيقية هنا
+            "1": ["DRIP-KEY-1DAY-001", "DRIP-KEY-1DAY-002"],
             "3": ["DRIP-KEY-3DAY-001"],
             "7": ["DRIP-KEY-7DAY-001", "DRIP-KEY-7DAY-002"],
             "15": ["DRIP-KEY-15DAY-001"],
             "30": ["DRIP-KEY-30DAY-001", "DRIP-KEY-30DAY-002"]
         }
     }
-    # يمكنك إضافة منتج آخر بنفس الطريقة:
-    # "another_product": { ... }
 }
 
 # ------------------- قاعدة البيانات -------------------
@@ -95,26 +92,19 @@ def get_verified_count():
 def add_purchase_record(user_id, record):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    c.execute("UPDATE users SET purchases = purchases || ? || '\n' WHERE user_id=?", (record, user_id))
+    # إصلاح المشكلة: استخدم COALESCE لتجنب NULL
+    c.execute("UPDATE users SET purchases = COALESCE(purchases, '') || ? || '\n' WHERE user_id=?", (record, user_id))
     conn.commit()
     conn.close()
 
 # ------------------- ترجمة شاملة -------------------
 T = {
     "ar": {
-        "shop_now": "🛍️ تسوق الآن",
-        "services": "🛒 الخدمات",
-        "add_balance": "💰 إضافة رصيد",
-        "profile": "👤 الملف الشخصي",
-        "how_to_use": "📖 طريقة الاستخدام",
-        "support": "📞 الدعم الفني",
-        "proofs": "📢 إثباتات الثقة",
-        "back": "🔙 العودة للقائمة الرئيسية",
-        "ff_services": "🎮 خدمات فري فاير",
-        "other_games": "🎮 شحن ألعاب أخرى",
-        "ff_topup": "💎 شحن جواهر فري فاير",
-        "keys_service": "🔑 إنشاء مفاتيح الهكرات",
-        "choose_product": "🔍 *اختر نوع المنتج:*",
+        "shop_now": "🛍️ تسوق الآن", "services": "🛒 الخدمات", "add_balance": "💰 إضافة رصيد",
+        "profile": "👤 الملف الشخصي", "how_to_use": "📖 طريقة الاستخدام", "support": "📞 الدعم الفني",
+        "proofs": "📢 إثباتات الثقة", "back": "🔙 العودة للقائمة الرئيسية", "ff_services": "🎮 خدمات فري فاير",
+        "other_games": "🎮 شحن ألعاب أخرى", "ff_topup": "💎 شحن جواهر فري فاير",
+        "keys_service": "🔑 إنشاء مفاتيح الهكرات", "choose_product": "🔍 *اختر نوع المنتج:*",
         "choose_validity": "📅 *اختر المدة:*",
         "keys_purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n🗓️ المدة: {} يوم\n💰 السعر: {} درهم\n🔑 مفتاحك: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "no_stock": "❌ عذراً، لا توجد مفاتيح متوفرة لهذا المنتج والمدة حالياً. جرب مدة أخرى.",
@@ -139,19 +129,11 @@ T = {
         "inline_proofs_btn": "📢 قناة الإثباتات"
     },
     "en": {
-        "shop_now": "🛍️ Shop Now",
-        "services": "🛒 Services",
-        "add_balance": "💰 Add Balance",
-        "profile": "👤 Profile",
-        "how_to_use": "📖 How to use",
-        "support": "📞 Support",
-        "proofs": "📢 Trust Proofs",
-        "back": "🔙 Back to Main Menu",
-        "ff_services": "🎮 Free Fire Services",
-        "other_games": "🎮 Other Games Top-up",
-        "ff_topup": "💎 Free Fire Diamonds Top-up",
-        "keys_service": "🔑 Create Hacker Keys",
-        "choose_product": "🔍 *Choose product type:*",
+        "shop_now": "🛍️ Shop Now", "services": "🛒 Services", "add_balance": "💰 Add Balance",
+        "profile": "👤 Profile", "how_to_use": "📖 How to use", "support": "📞 Support",
+        "proofs": "📢 Trust Proofs", "back": "🔙 Back to Main Menu", "ff_services": "🎮 Free Fire Services",
+        "other_games": "🎮 Other Games Top-up", "ff_topup": "💎 Free Fire Diamonds Top-up",
+        "keys_service": "🔑 Create Hacker Keys", "choose_product": "🔍 *Choose product type:*",
         "choose_validity": "📅 *Choose duration:*",
         "keys_purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n🗓️ Duration: {} days\n💰 Price: {} MAD\n🔑 Your key: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See our proofs: [Click here]({})",
         "no_stock": "❌ Sorry, no keys available for this product and duration. Try another duration.",
@@ -182,10 +164,7 @@ def send_lang_selection(chat_id):
     photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
     caption = "🌍 *Please select your language / اختر لغتك*"
     markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        types.InlineKeyboardButton("🇸🇦 العربية", callback_data="lang_ar"),
-        types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")
-    )
+    markup.add(types.InlineKeyboardButton("🇸🇦 العربية", callback_data="lang_ar"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"))
     bot.send_photo(chat_id, photo=photo_url, caption=caption, parse_mode="Markdown", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
@@ -198,7 +177,6 @@ def callback_lang(call):
     t = T[lang]
     bot.send_message(call.message.chat.id, t["welcome_after_lang"], parse_mode="Markdown")
 
-# ------------------- القائمة الرئيسية -------------------
 def show_main_menu(message, lang):
     t = T[lang]
     markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -210,7 +188,6 @@ def show_main_menu(message, lang):
     msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
     bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
-# ------------------- أوامر البوت -------------------
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = message.from_user.id
@@ -220,8 +197,7 @@ def start(message):
     user = c.fetchone()
     if not user:
         join_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        c.execute("INSERT INTO users (user_id, username, verified, purchases, join_date, language) VALUES (?, ?, 0, '', ?, 'ar')",
-                  (user_id, message.from_user.username, join_date))
+        c.execute("INSERT INTO users (user_id, username, verified, purchases, join_date, language) VALUES (?, ?, 0, '', ?, 'ar')", (user_id, message.from_user.username, join_date))
         conn.commit()
         conn.close()
         send_lang_selection(message.chat.id)
@@ -258,21 +234,14 @@ def handle_messages(message):
         return
 
     text = message.text
-    # القائمة بعد الضغط على تسوق الآن أو الخدمات
     if text in [t["shop_now"], t["services"]]:
         markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-        markup.add(t["ff_services"])    # خدمات فري فاير
-        markup.add(t["other_games"])     # شحن ألعاب أخرى
-        markup.add(t["back"])
+        markup.add(t["ff_services"], t["other_games"], t["back"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
-    # قائمة خدمات فري فاير (داخلية)
     elif text == t["ff_services"]:
         markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-        markup.add(t["ff_topup"])
-        markup.add(t["keys_service"])
-        markup.add(t["back"])
+        markup.add(t["ff_topup"], t["keys_service"], t["back"])
         bot.send_message(message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
-    # الخدمات القديمة
     elif text == t["other_games"]:
         bot.send_message(message.chat.id, t["other_games_text"], parse_mode="Markdown")
     elif text == t["ff_topup"]:
@@ -284,7 +253,7 @@ def handle_messages(message):
         markup.add(types.InlineKeyboardButton(t.get("inline_proofs_btn", "📢 قناة الإثباتات"), url=CHANNEL_PROOFS))
         bot.send_message(message.chat.id, t["proofs_text"].format(CHANNEL_PROOFS), reply_markup=markup, parse_mode="Markdown")
     elif text == t["profile"]:
-        c.execute("SELECT purchases, join_date FROM users WHERE user_id=?", (user_id,))
+        c.execute("SELECT COALESCE(purchases, ''), join_date FROM users WHERE user_id=?", (user_id,))
         purchases, join_date = c.fetchone()
         if not purchases:
             purchases = "📭 " + ("لا توجد مشتريات بعد." if lang=='ar' else "No purchases yet.")
@@ -307,7 +276,6 @@ def handle_messages(message):
         bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
     conn.close()
 
-# ------------------- باقات الجواهر (قائمة فرعية) -------------------
 def show_ff_packages(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -317,18 +285,15 @@ def show_ff_packages(message, lang):
     markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
     bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
-# ------------------- خدمة المفاتيح: عرض المنتجات -------------------
 def show_keys_products(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=1)
-    # نعرض المنتجات المتوفرة في keys_inventory
     for product_id, product_data in keys_inventory.items():
         btn_text = product_data["product_name_ar"] if lang == 'ar' else product_data["product_name_en"]
         markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_product_{product_id}"))
     markup.add(types.InlineKeyboardButton(t["back"], callback_data="back_to_ff_services"))
     bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
-# ------------------- عرض خيارات المدة للمنتج المختار -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_product_'))
 def show_key_durations(call):
     product_id = call.data.split('_')[2]
@@ -343,10 +308,9 @@ def show_key_durations(call):
         days_text = f"{days} {'يوم' if lang=='ar' else 'days'} - {price} {'درهم' if lang=='ar' else 'MAD'}"
         markup.add(types.InlineKeyboardButton(days_text, callback_data=f"key_buy_{product_id}_{days}"))
     markup.add(types.InlineKeyboardButton(t["back"], callback_data="back_to_key_products"))
-        bot.edit_message_text(t["choose_validity"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+    bot.edit_message_text(t["choose_validity"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
 
-# ------------------- تنفيذ شراء المفتاح -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
 def process_key_purchase(call):
     _, _, product_id, days = call.data.split('_')
@@ -361,25 +325,16 @@ def process_key_purchase(call):
         code = codes_dict[days].pop(0)
         price = product_data["prices"][days]
         product_name = product_data["product_name_ar"] if lang == 'ar' else product_data["product_name_en"]
-        # إرسال رسالة النجاح للمستخدم
-        success_msg = t["keys_purchase_success"].format(product_name, days, price, code, ADMIN_CONTACT, CHANNEL_PROOFS)
+                success_msg = t["keys_purchase_success"].format(product_name, days, price, code, ADMIN_CONTACT, CHANNEL_PROOFS)
         bot.send_message(call.message.chat.id, success_msg, parse_mode="Markdown")
-        # إشعار للإدمن
-        admin_msg = (f"🔔 *بيع مفتاح جديد!*\n"
-                     f"👤 @{call.from_user.username}\n"
-                     f"📦 المنتج: {product_name}\n"
-                     f"🗓️ المدة: {days} يوم\n"
-                     f"💰 السعر: {price} درهم\n"
-                     f"🔑 المفتاح: `{code}`")
+        admin_msg = (f"🔔 *بيع مفتاح جديد!*\n👤 @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {price} درهم\n🔑 المفتاح: `{code}`")
         bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-        # تسجيل الشراء في قاعدة البيانات
         purchase_record = f"🔑 {product_name} ({days} يوم) - {price} DH: {code} - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
         add_purchase_record(call.from_user.id, purchase_record)
         bot.answer_callback_query(call.id, t["confirm_purchase"])
     else:
         bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
 
-# ------------------- أزرار العودة (callback) -------------------
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_ff_services")
 def back_to_ff_services(call):
     lang = get_lang(call.from_user.id)
@@ -397,7 +352,6 @@ def back_to_key_products(call):
     show_keys_products(call.message, lang)
     bot.answer_callback_query(call.id)
 
-# ------------------- شراء الجواهر (كما هو بدون تغيير) -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
@@ -413,7 +367,6 @@ def process_purchase(call):
     else:
         bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
 
-# ------------------- تشغيل البوت -------------------
 if __name__ == "__main__":
     keep_alive()
     print("✅ Moslim Store is running (fully bilingual).")
