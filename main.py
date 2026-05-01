@@ -33,17 +33,17 @@ ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 codes_inventory = {
     "110": ["6627018902595942", "0226671541484161"],
     "231": ["4373710120638509", "1920413794690740"],
-    "583": ["9614548276115470", "3554007294175701"],
-    "1188": ["5091956889227839"],
+    "583": ["9600129739749249", "9614548276115470", "3554007294175701"],
+    "1188": ["2244758579935760", "5091956889227839"],
     "2420": ["7685192752918832", "6505308166203670"]
 }
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
 
-# ------------------- مخزن مفاتيح الهكرات (أكواد تجريبية) -------------------
+# ------------------- مخزن مفاتيح الهكرات -------------------
 keys_inventory = {
-    "drip_client": {
-        "name_ar": "DRIP CLIENT 🫟 APKMOD",
-        "name_en": "DRIP CLIENT 🫟 APKMOD",
+    "dripclient": {
+        "name_ar": "DRIP CLIENT APKMOD 👾",
+        "name_en": "DRIP CLIENT APKMOD 👾",
         "prices": {"1": 20, "3": 25, "7": 50, "15": 78, "30": 120},
         "codes": {
             "1": ["TEST-KEY-1DAY-001", "TEST-KEY-1DAY-002"],
@@ -116,7 +116,7 @@ T = {
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
         "choose_product": "🔍 *اختر نوع المنتج:*",
         "choose_validity": "📅 *اختر المدة:*",
-        "keys_purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n🗓️ المدة: {} يوم\n💰 السعر: {} درهم\n🔑 مفتاحك: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
+        "keys_purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n🗓️ المدة: {} يوم\n💰 السعر: {} 💰\n🔑 مفتاحك: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "no_stock": "❌ عذراً، لا توجد مفاتيح متوفرة لهذه المدة حالياً.",
         "choose_section": "🛒 *أقسام المتجر:*\n━━━━━━━━━━━━\nاختر القسم المناسب:",
         "other_games_text": "🎮 *شحن ألعاب أخرى*\n━━━━━━━━━━━━\n📌 *الألعاب المتوفرة:*\n• ببجي موبايل (UC)\n• كول أوف ديوتي (CP)\n• فري فاير (DA)\n• جينشين إمباكت\n\n📞 *للطلب:* تواصل مع الدعم",
@@ -156,7 +156,7 @@ T = {
         "keys_service": "🔑 Create Hacker Keys",
         "choose_product": "🔍 *Choose product type:*",
         "choose_validity": "📅 *Choose duration:*",
-        "keys_purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n🗓️ Duration: {} days\n💰 Price: {} MAD\n🔑 Your key: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See our proofs: [Click here]({})",
+        "keys_purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n🗓️ Duration: {} days\n💰 Price: {} 💰\n🔑 Your key: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See our proofs: [Click here]({})",
         "no_stock": "❌ Sorry, no keys available for this duration.",
         "choose_section": "🛒 *Store Sections:*\n━━━━━━━━━━━━\nChoose the appropriate section:",
         "other_games_text": "🎮 *Other Games Top-up*\n━━━━━━━━━━━━\n📌 *Available games:*\n• PUBG Mobile (UC)\n• Call of Duty (CP)\n• Free Fire (DA)\n• Genshin Impact\n\n📞 *To order:* Contact support",
@@ -316,7 +316,7 @@ def show_ff_packages(message, lang):
         price = prices[pkg]
         markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
     markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
-    markup.add(types.InlineKeyboardButton(t["back_to_ff_services"], callback_data="back_to_ff_services"))
+    # تم إزالة زر العودة لخدمات فري فاير من هنا (لأنه موجود في لوحة التحكم السفلية)
     bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
 def show_keys_products(message, lang):
@@ -327,10 +327,9 @@ def show_keys_products(message, lang):
         markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
     bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
-# ------------------- عرض خيارات المدة للمنتج -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
 def choose_duration(call):
-    prod_id = call.data.split('_', 2)[2]  # "key_prod_drip_client" -> ["key", "prod", "drip_client"]
+    prod_id = call.data.split('_')[2]
     lang = get_lang(call.from_user.id)
     t = T[lang]
     prod_data = keys_inventory.get(prod_id)
@@ -339,7 +338,7 @@ def choose_duration(call):
         return
     markup = types.InlineKeyboardMarkup(row_width=2)
     for days, price in prod_data["prices"].items():
-        markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 🪙", callback_data=f"key_buy_{prod_id}_{days}"))
+        markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} 💰", callback_data=f"key_buy_{prod_id}_{days}"))
     markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
     bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
@@ -348,10 +347,9 @@ def choose_duration(call):
     except:
         pass
 
-# ------------------- شراء المفتاح -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
 def execute_key_purchase(call):
-    parts = call.data.split('_', 3)  # "key_buy_drip_client_1" -> ["key", "buy", "drip_client", "1"]
+    parts = call.data.split('_')
     if len(parts) < 4:
         bot.answer_callback_query(call.id, "❌ خطأ في البيانات", show_alert=True)
         return
@@ -369,9 +367,9 @@ def execute_key_purchase(call):
         price = prod_data["prices"][days]
         product_name = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
         bot.send_message(call.message.chat.id, t["keys_purchase_success"].format(product_name, days, price, code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
-        admin_msg = (f"🔔 *بيع مفتاح جديد!*\n👤 @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {price} درهم\n🔑 المفتاح: `{code}`")
+        admin_msg = (f"🔔 *بيع مفتاح جديد!*\n👤 @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {price} 💰\n🔑 المفتاح: `{code}`")
         bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-        add_purchase_record(call.from_user.id, f"🔑 {product_name} ({days} يوم) - {price} DH: {code} - {datetime.now()}")
+        add_purchase_record(call.from_user.id, f"🔑 {product_name} ({days} يوم) - {price} 💰: {code} - {datetime.now()}")
         bot.answer_callback_query(call.id, t["confirm_purchase"])
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -380,7 +378,6 @@ def execute_key_purchase(call):
     else:
         bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
 
-# ------------------- أزرار العودة -------------------
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_ff_services")
 def back_to_ff_services(call):
     lang = get_lang(call.from_user.id)
@@ -402,7 +399,6 @@ def back_to_key_products(call):
     bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
 
-# ------------------- شراء الجواهر -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
