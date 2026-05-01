@@ -39,18 +39,18 @@ codes_inventory = {
 }
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
 
-# ------------------- مخزن مفاتيح الهكرات -------------------
+# ------------------- مخزن مفاتيح الهكرات (أكواد تجريبية) -------------------
 keys_inventory = {
     "drip_client": {
         "name_ar": "DRIP CLIENT 🫟 APKMOD",
         "name_en": "DRIP CLIENT 🫟 APKMOD",
         "prices": {"1": 20, "3": 25, "7": 50, "15": 78, "30": 120},
         "codes": {
-            "1": ["DRIP-1D-ABC123", "DRIP-1D-DEF456"],
-            "3": ["DRIP-3D-GHI789"],
-            "7": ["DRIP-7D-JKL012", "DRIP-7D-MNO345"],
-            "15": ["DRIP-15D-PQR678"],
-            "30": ["DRIP-30D-STU901", "DRIP-30D-VWX234"]
+            "1": ["TEST-KEY-1DAY-001", "TEST-KEY-1DAY-002"],
+            "3": ["TEST-KEY-3DAY-001"],
+            "7": ["TEST-KEY-7DAY-001", "TEST-KEY-7DAY-002"],
+            "15": ["TEST-KEY-15DAY-001"],
+            "30": ["TEST-KEY-30DAY-001", "TEST-KEY-30DAY-002"]
         }
     }
 }
@@ -336,6 +336,7 @@ def show_keys_products(message, lang):
     markup.add(types.InlineKeyboardButton(t["back_to_ff_services"], callback_data="back_to_ff_services"))
     bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
+# -------------------  عرض خيارات المدة للمنتج -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
 def choose_duration(call):
     prod_id = call.data.split('_')[2]
@@ -343,22 +344,21 @@ def choose_duration(call):
     t = T[lang]
     prod_data = keys_inventory.get(prod_id)
     if not prod_data:
-        bot.answer_callback_query(call.id, "❌ خطأ: المنتج غير موجود", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ المنتج غير موجود", show_alert=True)
         return
     markup = types.InlineKeyboardMarkup(row_width=2)
-    # عرض الأزرار حسب المدة والسعر
     for days, price in prod_data["prices"].items():
         markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 🪙", callback_data=f"key_buy_{prod_id}_{days}"))
     markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
-    # تعديل رسالة اختيار المدة (نقوم بإرسال رسالة جديدة لأن edit قد تسبب خطأ)
+    # إرسال رسالة جديدة ومسح القديمة عشان ما يظهر خطأ
     bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
-    # حذف الرسالة القديمة لتنظيف الشات
     try:
         bot.delete_message(call.message.chat.id, call.message.message_id)
     except:
         pass
 
+# -------------------  شراء المفتاح -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
 def execute_key_purchase(call):
     parts = call.data.split('_')
@@ -368,19 +368,21 @@ def execute_key_purchase(call):
     t = T[lang]
     prod_data = keys_inventory.get(prod_id)
     if not prod_data:
-        bot.answer_callback_query(call.id, "❌ خطأ", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ خطأ في المنتج", show_alert=True)
         return
     code_list = prod_data["codes"].get(days, [])
     if code_list:
         code = code_list.pop(0)
         price = prod_data["prices"][days]
         product_name = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
+        # رسالة النجاح للمستخدم
         bot.send_message(call.message.chat.id, t["keys_purchase_success"].format(product_name, days, price, code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
+        # إشعار للمدير
         admin_msg = (f"🔔 *بيع مفتاح جديد!*\n👤 @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {price} درهم\n🔑 المفتاح: `{code}`")
         bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+        # حفظ في السجل
         add_purchase_record(call.from_user.id, f"🔑 {product_name} ({days} يوم) - {price} DH: {code} - {datetime.now()}")
         bot.answer_callback_query(call.id, t["confirm_purchase"])
-        # حذف رسالة اختيار المدة السابقة
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
         except:
@@ -388,16 +390,13 @@ def execute_key_purchase(call):
     else:
         bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
 
+# ------------------- أزرار العودة -------------------
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_ff_services")
 def back_to_ff_services(call):
     lang = get_lang(call.from_user.id)
     t = T[lang]
-    # عرض لوحة مفاتيح خدمات فري فاير
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(t["ff_topup"])
-    markup.add(t["keys_service"])
-    markup.add(t["back_to_sections"])
-    # حذف الرسالة الحالية وإرسال رسالة جديدة
+    markup.add(t["ff_topup"], t["keys_service"], t["back_to_sections"])
     bot.delete_message(call.message.chat.id, call.message.message_id)
     bot.send_message(call.message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
@@ -411,10 +410,10 @@ def back_to_key_products(call):
         btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
         markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
     markup.add(types.InlineKeyboardButton(t["back_to_ff_services"], callback_data="back_to_ff_services"))
-    # تعديل الرسالة الحالية لعرض قائمة المنتجات
     bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
 
+# ------------------- شراء الجواهر -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
