@@ -343,4 +343,78 @@ def show_key_durations(call):
         days_text = f"{days} {'يوم' if lang=='ar' else 'days'} - {price} {'درهم' if lang=='ar' else 'MAD'}"
         markup.add(types.InlineKeyboardButton(days_text, callback_data=f"key_buy_{product_id}_{days}"))
     markup.add(types.InlineKeyboardButton(t["back"], callback_data="back_to_key_products"))
-    bo
+        bot.edit_message_text(t["choose_validity"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+    bot.answer_callback_query(call.id)
+
+# ------------------- تنفيذ شراء المفتاح -------------------
+@bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
+def process_key_purchase(call):
+    _, _, product_id, days = call.data.split('_')
+    lang = get_lang(call.from_user.id)
+    t = T[lang]
+    product_data = keys_inventory.get(product_id)
+    if not product_data:
+        bot.answer_callback_query(call.id, "Error", show_alert=True)
+        return
+    codes_dict = product_data["codes"]
+    if days in codes_dict and codes_dict[days]:
+        code = codes_dict[days].pop(0)
+        price = product_data["prices"][days]
+        product_name = product_data["product_name_ar"] if lang == 'ar' else product_data["product_name_en"]
+        # إرسال رسالة النجاح للمستخدم
+        success_msg = t["keys_purchase_success"].format(product_name, days, price, code, ADMIN_CONTACT, CHANNEL_PROOFS)
+        bot.send_message(call.message.chat.id, success_msg, parse_mode="Markdown")
+        # إشعار للإدمن
+        admin_msg = (f"🔔 *بيع مفتاح جديد!*\n"
+                     f"👤 @{call.from_user.username}\n"
+                     f"📦 المنتج: {product_name}\n"
+                     f"🗓️ المدة: {days} يوم\n"
+                     f"💰 السعر: {price} درهم\n"
+                     f"🔑 المفتاح: `{code}`")
+        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+        # تسجيل الشراء في قاعدة البيانات
+        purchase_record = f"🔑 {product_name} ({days} يوم) - {price} DH: {code} - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        add_purchase_record(call.from_user.id, purchase_record)
+        bot.answer_callback_query(call.id, t["confirm_purchase"])
+    else:
+        bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
+
+# ------------------- أزرار العودة (callback) -------------------
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_ff_services")
+def back_to_ff_services(call):
+    lang = get_lang(call.from_user.id)
+    t = T[lang]
+    markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    markup.add(t["ff_topup"], t["keys_service"], t["back"])
+    bot.edit_message_text("🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
+    bot.send_message(call.message.chat.id, "الرجاء استخدام الأزرار أدناه:", reply_markup=markup)
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_key_products")
+def back_to_key_products(call):
+    lang = get_lang(call.from_user.id)
+    t = T[lang]
+    show_keys_products(call.message, lang)
+    bot.answer_callback_query(call.id)
+
+# ------------------- شراء الجواهر (كما هو بدون تغيير) -------------------
+@bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
+def process_purchase(call):
+    pkg = call.data.split('_')[1]
+    lang = get_lang(call.from_user.id)
+    t = T[lang]
+    if pkg in codes_inventory and codes_inventory[pkg]:
+        code = codes_inventory[pkg].pop(0)
+        bot.send_message(call.message.chat.id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
+        admin_msg = f"🔔 *بيع جديد!*\n👤 @{call.from_user.username}\n📦 {pkg}💎\n💰 {prices[pkg]} درهم\n🔑 {code}"
+        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+        add_purchase_record(call.from_user.id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
+        bot.answer_callback_query(call.id, t["confirm_purchase"])
+    else:
+        bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
+
+# ------------------- تشغيل البوت -------------------
+if __name__ == "__main__":
+    keep_alive()
+    print("✅ Moslim Store is running (fully bilingual).")
+    bot.infinity_polling()
