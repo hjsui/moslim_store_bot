@@ -29,7 +29,7 @@ STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
 CHANNEL_PROOFS = "https://t.me/moslim_store1"
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
-# ------------------- أكواد الجواهر (كما في كودك القديم) -------------------
+# ------------------- أكواد الجواهر -------------------
 codes_inventory = {
     "110": ["6627018902595942", "0226671541484161"],
     "231": ["4373710120638509", "1920413794690740"],
@@ -39,21 +39,20 @@ codes_inventory = {
 }
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
 
-# ------------------- مخزن مفاتيح الهكرات (يمكنك إضافة أكواد حقيقية هنا) -------------------
+# ------------------- مخزن مفاتيح الهكرات -------------------
 keys_inventory = {
     "drip_client": {
         "name_ar": "DRIP CLIENT 🫟 APKMOD",
         "name_en": "DRIP CLIENT 🫟 APKMOD",
         "prices": {"1": 20, "3": 25, "7": 50, "15": 78, "30": 120},
         "codes": {
-            "1": ["DRIP-1D-ABC123", "DRIP-1D-DEF456"],   # ضع أكواد حقيقية هنا
+            "1": ["DRIP-1D-ABC123", "DRIP-1D-DEF456"],
             "3": ["DRIP-3D-GHI789"],
             "7": ["DRIP-7D-JKL012", "DRIP-7D-MNO345"],
             "15": ["DRIP-15D-PQR678"],
             "30": ["DRIP-30D-STU901", "DRIP-30D-VWX234"]
         }
     }
-    # يمكنك إضافة منتجات أخرى هنا
 }
 
 # ------------------- قاعدة البيانات -------------------
@@ -97,7 +96,7 @@ def add_purchase_record(user_id, record):
     conn.commit()
     conn.close()
 
-# ------------------- قاموس الترجمة الكامل -------------------
+# ------------------- قاموس الترجمة -------------------
 T = {
     "ar": {
         "shop_now": "🛍️ تسوق الآن",
@@ -107,7 +106,10 @@ T = {
         "how_to_use": "📖 طريقة الاستخدام",
         "support": "📞 الدعم الفني",
         "proofs": "📢 إثباتات الثقة",
-        "back": "🔙 العودة للقائمة الرئيسية",
+        "back_to_main": "🔙 العودة للقائمة الرئيسية",
+        "back_to_sections": "🔙 العودة لأقسام المتجر",
+        "back_to_ff_services": "🔙 العودة لخدمات فري فاير",
+        "back_to_products": "🔙 العودة للمنتجات",
         "ff_services": "🎮 خدمات فري فاير",
         "other_games": "🎮 شحن ألعاب أخرى",
         "ff_topup": "💎 شحن جواهر فري فاير",
@@ -144,7 +146,10 @@ T = {
         "how_to_use": "📖 How to use",
         "support": "📞 Support",
         "proofs": "📢 Trust Proofs",
-        "back": "🔙 Back to Main Menu",
+        "back_to_main": "🔙 Back to Main Menu",
+        "back_to_sections": "🔙 Back to Store Sections",
+        "back_to_ff_services": "🔙 Back to Free Fire Services",
+        "back_to_products": "🔙 Back to Products",
         "ff_services": "🎮 Free Fire Services",
         "other_games": "🎮 Other Games Top-up",
         "ff_topup": "💎 Free Fire Diamonds Top-up",
@@ -192,7 +197,6 @@ def callback_lang(call):
     bot.delete_message(call.message.chat.id, call.message.message_id)
     bot.send_message(call.message.chat.id, T[lang]["welcome_after_lang"], parse_mode="Markdown")
 
-# ------------------- القائمة الرئيسية -------------------
 def show_main_menu(message, lang):
     t = T[lang]
     markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -204,7 +208,6 @@ def show_main_menu(message, lang):
     msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
     bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
-# ------------------- أوامر البوت -------------------
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = message.from_user.id
@@ -252,28 +255,46 @@ def handle_messages(message):
         return
 
     text = message.text
-    if text == t["proofs"]:
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton(t.get("inline_proofs_btn", "📢 قناة الإثباتات"), url=CHANNEL_PROOFS))
-        bot.send_message(message.chat.id, t["proofs_text"].format(CHANNEL_PROOFS), reply_markup=markup, parse_mode="Markdown")
-    elif text in [t["shop_now"], t["services"]]:
+    # القائمة الرئيسية -> أقسام المتجر
+    if text in [t["shop_now"], t["services"]]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["ff_services"])
         markup.add(t["other_games"])
-        markup.add(t["back"])
+        markup.add(t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
+    # أقسام المتجر -> خدمات فري فاير
     elif text == t["ff_services"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["ff_topup"])
         markup.add(t["keys_service"])
-        markup.add(t["back"])
+        markup.add(t["back_to_sections"])
         bot.send_message(message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
+    # أقسام المتجر -> شحن ألعاب أخرى
     elif text == t["other_games"]:
-        bot.send_message(message.chat.id, t["other_games_text"], parse_mode="Markdown")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(t["back_to_sections"])
+        bot.send_message(message.chat.id, t["other_games_text"], reply_markup=markup, parse_mode="Markdown")
+    # خدمات فري فاير -> شحن جواهر
     elif text == t["ff_topup"]:
         show_ff_packages(message, lang)
+    # خدمات فري فاير -> مفاتيح الهكرات
     elif text == t["keys_service"]:
         show_keys_products(message, lang)
+    # زر العودة للقائمة الرئيسية
+    elif text == t["back_to_main"]:
+        show_main_menu(message, lang)
+    # زر العودة لأقسام المتجر
+    elif text == t["back_to_sections"]:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(t["ff_services"])
+        markup.add(t["other_games"])
+        markup.add(t["back_to_main"])
+        bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
+    # باقي الأزرار
+    elif text == t["proofs"]:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton(t.get("inline_proofs_btn", "📢 قناة الإثباتات"), url=CHANNEL_PROOFS))
+        bot.send_message(message.chat.id, t["proofs_text"].format(CHANNEL_PROOFS), reply_markup=markup, parse_mode="Markdown")
     elif text == t["profile"]:
         c.execute("SELECT purchases, join_date FROM users WHERE user_id=?", (user_id,))
         purchases, join_date = c.fetchone()
@@ -292,13 +313,10 @@ def handle_messages(message):
         bot.send_message(message.chat.id, t["add_balance_text"], reply_markup=markup, parse_mode="Markdown")
     elif text == t["how_to_use"]:
         bot.send_message(message.chat.id, t["how_to_use_text"], parse_mode="Markdown")
-    elif text == t["back"]:
-        show_main_menu(message, lang)
     else:
         bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
     conn.close()
 
-# ------------------- باقات الجواهر -------------------
 def show_ff_packages(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -306,16 +324,16 @@ def show_ff_packages(message, lang):
         price = prices[pkg]
         markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
     markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
+    markup.add(types.InlineKeyboardButton(t["back_to_ff_services"], callback_data="back_to_ff_services"))
     bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
-# ------------------- خدمة المفاتيح: عرض المنتجات -------------------
 def show_keys_products(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=1)
     for prod_id, prod_data in keys_inventory.items():
         btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
         markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
-    markup.add(types.InlineKeyboardButton(t["back"], callback_data="back_to_ff_services_menu"))
+    markup.add(types.InlineKeyboardButton(t["back_to_ff_services"], callback_data="back_to_ff_services"))
     bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
@@ -325,14 +343,21 @@ def choose_duration(call):
     t = T[lang]
     prod_data = keys_inventory.get(prod_id)
     if not prod_data:
-        bot.answer_callback_query(call.id, "Error", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ خطأ: المنتج غير موجود", show_alert=True)
         return
     markup = types.InlineKeyboardMarkup(row_width=2)
+    # عرض الأزرار حسب المدة والسعر
     for days, price in prod_data["prices"].items():
         markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 🪙", callback_data=f"key_buy_{prod_id}_{days}"))
-    markup.add(types.InlineKeyboardButton(t["back"], callback_data="back_to_key_products"))
-    bot.edit_message_text(t["choose_validity"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+    markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
+    # تعديل رسالة اختيار المدة (نقوم بإرسال رسالة جديدة لأن edit قد تسبب خطأ)
+    bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
+    # حذف الرسالة القديمة لتنظيف الشات
+    try:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+    except:
+        pass
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
 def execute_key_purchase(call):
@@ -343,42 +368,53 @@ def execute_key_purchase(call):
     t = T[lang]
     prod_data = keys_inventory.get(prod_id)
     if not prod_data:
-        bot.answer_callback_query(call.id, "Error", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ خطأ", show_alert=True)
         return
     code_list = prod_data["codes"].get(days, [])
     if code_list:
         code = code_list.pop(0)
         price = prod_data["prices"][days]
         product_name = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
-        # إرسال رسالة النجاح للمستخدم
         bot.send_message(call.message.chat.id, t["keys_purchase_success"].format(product_name, days, price, code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
-        # إشعار الإدمن
         admin_msg = (f"🔔 *بيع مفتاح جديد!*\n👤 @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {price} درهم\n🔑 المفتاح: `{code}`")
         bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-        # تسجيل الشراء
         add_purchase_record(call.from_user.id, f"🔑 {product_name} ({days} يوم) - {price} DH: {code} - {datetime.now()}")
         bot.answer_callback_query(call.id, t["confirm_purchase"])
+        # حذف رسالة اختيار المدة السابقة
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except:
+            pass
     else:
         bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
 
-# ------------------- أزرار العودة -------------------
-@bot.callback_query_handler(func=lambda call: call.data == "back_to_ff_services_menu")
-def back_to_ff_services_menu(call):
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_ff_services")
+def back_to_ff_services(call):
     lang = get_lang(call.from_user.id)
     t = T[lang]
+    # عرض لوحة مفاتيح خدمات فري فاير
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(t["ff_topup"], t["keys_service"], t["back"])
-    bot.edit_message_text("🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
-    bot.send_message(call.message.chat.id, "الرجاء استخدام الأزرار أدناه:", reply_markup=markup)
+    markup.add(t["ff_topup"])
+    markup.add(t["keys_service"])
+    markup.add(t["back_to_sections"])
+    # حذف الرسالة الحالية وإرسال رسالة جديدة
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    bot.send_message(call.message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_key_products")
 def back_to_key_products(call):
     lang = get_lang(call.from_user.id)
-    show_keys_products(call.message, lang)
+    t = T[lang]
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    for prod_id, prod_data in keys_inventory.items():
+        btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
+        markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
+    markup.add(types.InlineKeyboardButton(t["back_to_ff_services"], callback_data="back_to_ff_services"))
+    # تعديل الرسالة الحالية لعرض قائمة المنتجات
+    bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
 
-# ------------------- شراء الجواهر -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
@@ -394,7 +430,6 @@ def process_purchase(call):
     else:
         bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
 
-# ------------------- تشغيل البوت -------------------
 if __name__ == "__main__":
     keep_alive()
     print("✅ Moslim Store is running (fully bilingual).")
