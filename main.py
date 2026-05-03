@@ -21,7 +21,7 @@ def keep_alive():
     t.start()
 
 # ------------------- إعدادات البوت -------------------
-API_TOKEN = '8325861290:AAEsIB4fiWPT7kGqVLVIpYNjDmll99CXm9M'
+API_TOKEN = 'BOT_TOKEN'
 ADMIN_ID = 6500854407
 bot = telebot.TeleBot(API_TOKEN)
 
