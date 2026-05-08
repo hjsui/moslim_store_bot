@@ -509,11 +509,12 @@ def process_proof_photo(message, order_id):
     user_id = message.from_user.id
     lang = get_lang(user_id)
     t = T[lang]
+    
     if not message.photo:
         bot.send_message(user_id, "❌ يرجى إرسال صورة وليس نصاً. أعد المحاولة.")
         bot.register_next_step_handler_by_chat_id(user_id, lambda msg: process_proof_photo(msg, order_id))
         return
-
+    
     photo_id = message.photo[-1].file_id
     update_order_status(order_id, 'waiting_admin', proof_photo_id=photo_id)
     order = get_order(order_id)
@@ -524,19 +525,28 @@ def process_proof_photo(message, order_id):
     product_type = order[2]
     product_id = order[3]
     amount = order[4]
+    
     if product_type == 'ff':
         product_name = f"جواهر فري فاير ({product_id} جوهرة)"
     else:
         product_name = f"مفتاح DRIP CLIENT - {product_id} يوم"
 
-    admin_msg = (f"🔔 *طلب دفع جديد*\n━━━━━━━━━━━━\n🆔 الطلب: `{order_id}`\n"
-                 f"👤 المستخدم: @{message.from_user.username}\n📦 المنتج: {product_name}\n"
-                 f"💰 المبلغ: {amount} درهم\n📸 [إثبات الدفع](tg://user?id={user_id})")
+    # ✅ استخدام HTML بدلاً من Markdown (لتجنب أخطاء التنسيق)
+    admin_msg = (f"<b>🔔 طلب دفع جديد</b>\n━━━━━━━━━━━━\n"
+                 f"<b>🆔 الطلب:</b> <code>{order_id}</code>\n"
+                 f"<b>👤 المستخدم:</b> @{message.from_user.username}\n"
+                 f"<b>📦 المنتج:</b> {product_name}\n"
+                 f"<b>💰 المبلغ:</b> {amount} درهم\n"
+                 f"<b>📸 <a href='tg://user?id={user_id}'>إثبات الدفع</a></b>")
+    
     markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(types.InlineKeyboardButton("✅ قبول الطلب", callback_data=f"admin_accept_{order_id}"),
-               types.InlineKeyboardButton("❌ رفض الطلب", callback_data=f"admin_reject_{order_id}"))
-    bot.send_photo(ADMIN_ID, photo_id, caption=admin_msg, reply_markup=markup, parse_mode="Markdown")
-    bot.send_message(user_id, t["proof_received"], parse_mode="Markdown")
+    markup.add(
+        types.InlineKeyboardButton("✅ قبول الطلب", callback_data=f"admin_accept_{order_id}"),
+        types.InlineKeyboardButton("❌ رفض الطلب", callback_data=f"admin_reject_{order_id}")
+    )
+    
+    bot.send_photo(ADMIN_ID, photo_id, caption=admin_msg, reply_markup=markup, parse_mode="HTML")
+    bot.send_message(user_id, t["proof_received"], parse_mode="HTML")  # أيضاً استخدم HTML هنا
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('admin_accept_'))
 def admin_accept_order(call):
