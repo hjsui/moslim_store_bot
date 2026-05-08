@@ -25,7 +25,7 @@ def keep_alive():
 
 # ------------------- 2. إعدادات البوت الأساسية -------------------
 API_TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = 6500854407  # ضع معرفك الشخصي هنا (رقم)
+ADMIN_ID = 8530485909  # ضع معرفك الشخصي هنا (رقم)
 bot = telebot.TeleBot(API_TOKEN)
 
 STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
