@@ -107,8 +107,8 @@ def add_purchase_record(user_id, record):
     c.execute("UPDATE users SET purchases = COALESCE(purchases, '') || ? || '\n' WHERE user_id=?", (record, user_id))
     conn.commit()
     conn.close()
-    
-    # ------------------- 6. دوال إدارة الطلبات -------------------
+
+# ------------------- 6. دوال إدارة الطلبات -------------------
 def generate_order_id():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
@@ -262,7 +262,7 @@ T = {
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel"
     }
-}
+                 }
 
 # ------------------- 9. دوال واجهة المستخدم -------------------
 def send_lang_selection(chat_id):
@@ -665,4 +665,17 @@ def back_to_ff_services(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_key_products")
 def back_to_key_products(call):
-    lang = get_lang(call.from_user
+    lang = get_lang(call.from_user.id)
+    t = T[lang]
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    for prod_id, prod_data in keys_inventory.items():
+        btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
+        markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
+    bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+    bot.answer_callback_query(call.id)
+
+# ------------------- 15. تشغيل البوت -------------------
+if __name__ == "__main__":
+    keep_alive()
+    print("✅ متجر مسلم يعمل بكفاءة مع نظام دفع يدوي متكامل وقائمة بيضاء.")
+    bot.infinity_polling()
