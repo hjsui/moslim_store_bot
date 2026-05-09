@@ -142,7 +142,7 @@ def get_order(order_id):
     conn.close()
     return row
 
-# ------------------- 7. بيانات طرق الدفع -------------------
+# ------------------- 7. بيانات طرق الدفع (معدلة) -------------------
 PAYMENT_METHODS = {
     "cih": {
         "name_ar": "🏦 CIH BANK",
@@ -151,8 +151,8 @@ PAYMENT_METHODS = {
         "details_en": "Name: MOSLIM STORE\nRIB: <code>6899904211035500</code>\nR.I.P: <code>230480689990421103550036</code>",
     },
     "barid": {
-        "name_ar": "🌟 البـريـد بـنــك",
-        "name_en": "🌟 Barid Bank",
+        "name_ar": "🏦 BARID BANK",
+        "name_en": "🏦 BARID BANK",
         "details_ar": "الاسم: MOSLIM ELOMARI\nرقم الحساب: <code>13958215</code>",
         "details_en": "Name: MOSLIM ELOMARI\nAccount: <code>13958215</code>",
     },
@@ -163,14 +163,14 @@ PAYMENT_METHODS = {
         "details_en": "Account: <code>0723644027</code>",
     },
     "binance": {
-        "name_ar": "🇧🇮🇳🇦🇳🇨🇪 بينانس",
-        "name_en": "🇧🇮🇳🇦🇳🇨🇪 Binance",
+        "name_ar": "💰 🇧 🇮 🇳 🇦 🇳 🇨 🇪",
+        "name_en": "💰 🇧 🇮 🇳 🇦 🇳 🇨 🇪",
         "details_ar": "𝙄𝘿: <code>1208575784</code>\n𝙉𝘼𝙈𝙀: مـتـجـــر مـسـلـــم",
         "details_en": "ID: <code>1208575784</code>\nNAME: MOSLIM STORE",
     }
 }
 
-# ------------------- 8. قاموس الترجمة (تم إضافة رابط القناة ورسالة الرفض) -------------------
+# ------------------- 8. قاموس الترجمة (معدّل) -------------------
 T = {
     "ar": {
         "shop_now": "🛍️ تسوق الآن",
@@ -192,8 +192,8 @@ T = {
         "choose_validity": "📅 *اختر المدة:*",
         "choose_payment": "💳 *اختر طريقة الدفع:*",
         "ask_proof": "📸 *أرسل صورة إثبات الدفع الآن* (لقطة شاشة من تطبيق البنك أو المحفظة)",
-        "proof_received": "✅ *تم استلام إثبات الدفع!* سيتم مراجعة طلبك من قبل الإدارة خلال دقائق.",
-        "order_rejected": "❌ *عذراً، تم رفض طلبك* لأن الدفع لم يصل أو الإثبات غير واضح.\n💰 *المنتج:* {}\n📞 يمكنك التواصل مع الدعم: @MOSLIM_SHOP\n💡 يمكنك الضغط على الزر أدناه لتغيير طريقة الدفع.",
+        "proof_received": "✅ تم استلام إثبات الدفع! جاري تسليم منتجك 📦",
+        "order_rejected": "❌ <b>عذراً، تم رفض طلبك</b> لأن الدفع لم يصل أو الإثبات غير واضح.\n💰 <b>المنتج:</b> {}\n📞 يمكنك التواصل مع الدعم: @MOSLIM_SHOP\n💡 يمكنك الضغط على الزر أدناه لتغيير طريقة الدفع.",
         "already_paid": "⚠️ لديك طلب قيد المراجعة بالفعل. يرجى الانتظار أو التواصل مع الدعم.",
         "keys_purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n🗓️ المدة: {} يوم\n💰 السعر: {} 💰\n🔑 مفتاحك: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "no_stock": "❌ عذراً، لا توجد مفاتيح متوفرة لهذه المدة حالياً.",
@@ -237,8 +237,8 @@ T = {
         "choose_validity": "📅 *Choose duration:*",
         "choose_payment": "💳 *Choose payment method:*",
         "ask_proof": "📸 *Send your payment proof screenshot now*",
-        "proof_received": "✅ *Proof received!* Your order will be reviewed shortly.",
-        "order_rejected": "❌ *Order rejected* because payment was not received or proof is unclear.\n💰 *Product:* {}\n📞 Contact support: @MOSLIM_SHOP\n💡 Press the button below to change payment method.",
+        "proof_received": "✅ Payment proof received! Delivering your product 📦",
+        "order_rejected": "❌ <b>Order rejected</b> because payment was not received or proof is unclear.\n💰 <b>Product:</b> {}\n📞 Contact support: @MOSLIM_SHOP\n💡 Press the button below to change payment method.",
         "already_paid": "⚠️ You have a pending order. Please wait or contact support.",
         "keys_purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n🗓️ Duration: {} days\n💰 Price: {} 💰\n🔑 Your key: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See our proofs: [Click here]({})",
         "no_stock": "❌ Sorry, no keys available for this duration.",
@@ -262,7 +262,7 @@ T = {
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel"
     }
-    }
+}
 
 # ------------------- 9. دوال واجهة المستخدم -------------------
 def send_lang_selection(chat_id):
@@ -342,13 +342,11 @@ def handle_messages(message):
     text = message.text
     if text in [t["shop_now"], t["services"]]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        # عكس الترتيب: شحن ألعاب أخرى (يسار) - خدمات فري فاير (يمين)
         markup.add(t["other_games"], t["ff_services"])
         markup.add(t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
     elif text == t["ff_services"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        # عكس الترتيب: إنشاء مفاتيح (يسار) - شحن جواهر (يمين)
         markup.add(t["keys_service"], t["ff_topup"])
         markup.add(t["back_to_sections"])
         bot.send_message(message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
@@ -364,7 +362,6 @@ def handle_messages(message):
         show_main_menu(message, lang)
     elif text == t["back_to_sections"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        # نفس التعديل هنا أيضاً
         markup.add(t["other_games"], t["ff_services"])
         markup.add(t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
@@ -474,7 +471,6 @@ def handle_payment_method(call):
                     f"⚠️ بعد التحويل، أرسل صورة الإيصال بالضغط على الزر أدناه.")
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("📸 أرسل الإيصال", callback_data=f"send_proof_{order_id}"))
-    # زر تغيير طريقة الدفع (للمستخدم)
     markup.add(types.InlineKeyboardButton("🔄 تغيير طريقة الدفع", callback_data=f"change_payment_{order_id}"))
     bot.send_message(user_id, instructions, reply_markup=markup, parse_mode="HTML")
     bot.answer_callback_query(call.id)
@@ -487,12 +483,8 @@ def change_payment_method(call):
     if not order or order[1] != user_id or order[5] not in ('pending', 'waiting_admin'):
         bot.answer_callback_query(call.id, "لا يمكن تغيير طريقة الدفع الآن", show_alert=True)
         return
-    # حذف الطلب القديم وإنشاء طلب جديد
     update_order_status(order_id, 'cancelled', admin_action='user_cancelled')
-    product_type = order[2]
-    product_id = order[3]
-    amount = order[4]
-    # إعادة عرض طرق الدفع
+    product_type, product_id, amount = order[2], order[3], order[4]
     show_payment_methods(user_id, product_type, product_id, amount)
     bot.answer_callback_query(call.id, "✅ يمكنك اختيار طريقة دفع جديدة")
 
@@ -598,12 +590,12 @@ def finalize_order(order_id, accepted):
                 bot.send_message(user_id, t["no_stock"], parse_mode="Markdown")
                 update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
     else:
-        # رفض الطلب: إرسال رسالة واضحة للمستخدم مع اسم المنتج وزر لتغيير طريقة الدفع
         product_name = f"جواهر فري فاير ({product_id} جوهرة)" if product_type == 'ff' else f"مفتاح DRIP CLIENT - {product_id} يوم"
         reject_msg = t["order_rejected"].format(product_name)
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("🔄 تغيير طريقة الدفع", callback_data=f"change_payment_{order_id}"))
-        bot.send_message(user_id, reject_msg, reply_markup=markup, parse_mode="Markdown")
+        # تم إصلاح parse_mode هنا:
+        bot.send_message(user_id, reject_msg, reply_markup=markup, parse_mode="HTML")
         update_order_status(order_id, 'rejected', admin_action='reject')
         bot.send_message(ADMIN_ID, f"❌ تم رفض الطلب {order_id}")
 
