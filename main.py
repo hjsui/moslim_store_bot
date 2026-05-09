@@ -480,7 +480,8 @@ def change_payment_method(call):
     order_id = call.data.split('_', 2)[2]
     user_id = call.from_user.id
     order = get_order(order_id)
-    if not order or order[1] != user_id or order[5] not in ('pending', 'waiting_admin'):
+    # السماح إذا كان الطلب معلقاً أو بانتظار الإدمن أو مرفوضاً
+    if not order or order[1] != user_id or order[5] not in ('pending', 'waiting_admin', 'rejected'):
         bot.answer_callback_query(call.id, "لا يمكن تغيير طريقة الدفع الآن", show_alert=True)
         return
     update_order_status(order_id, 'cancelled', admin_action='user_cancelled')
