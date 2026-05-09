@@ -341,14 +341,15 @@ def handle_messages(message):
 
     text = message.text
     if text in [t["shop_now"], t["services"]]:
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(t["ff_services"], t["other_games"])
-    markup.add(t["back_to_main"])
-    bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        markup.add(t["ff_services"], t["other_games"])
+        markup.add(t["back_to_main"])
+        bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
     elif text == t["ff_services"]:
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    markup.add(t["ff_topup"], t["keys_service"], t["back_to_sections"])
-    bot.send_message(message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        markup.add(t["ff_topup"], t["keys_service"])
+        markup.add(t["back_to_sections"])
+        bot.send_message(message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
     elif text == t["other_games"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["back_to_sections"])
@@ -360,8 +361,9 @@ def handle_messages(message):
     elif text == t["back_to_main"]:
         show_main_menu(message, lang)
     elif text == t["back_to_sections"]:
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add(t["ff_services"], t["other_games"], t["back_to_main"])
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        markup.add(t["ff_services"], t["other_games"])
+        markup.add(t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
     elif text == t["proofs"]:
         markup = types.InlineKeyboardMarkup()
