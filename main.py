@@ -262,7 +262,7 @@ T = {
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel"
     }
-}
+    }
 
 # ------------------- 9. دوال واجهة المستخدم -------------------
 def send_lang_selection(chat_id):
