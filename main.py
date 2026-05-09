@@ -89,7 +89,7 @@ def get_lang(user_id):
 def set_lang(user_id, lang):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-   c.execute("UPDATE users SET language = ? WHERE user_id=?", (lang, user_id))
+    c.execute("UPDATE users SET language = ? WHERE user_id=?", (lang, user_id))
     conn.commit()
     conn.close()
 
