@@ -33,7 +33,7 @@ CHANNEL_PROOFS = "https://t.me/moslim_store1"
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
 # ------------------- 3. القائمة البيضاء -------------------
-WHITELISTED_USERS = [8530485909]  # ضع معرفات أصدقائك هنا
+WHITELISTED_USERS = [8530485909, 8615239297]  # ضع معرفات أصدقائك هنا
 
 def is_whitelisted(user_id):
     return user_id in WHITELISTED_USERS
