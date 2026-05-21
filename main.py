@@ -33,7 +33,7 @@ CHANNEL_PROOFS = "https://t.me/moslim_store1"
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
 # ------------------- 3. القائمة البيضاء -------------------
-WHITELISTED_USERS = [8530485909, 8615239297]
+WHITELISTED_USERS = [8530485909, 8615239297]  # ضع معرفات أصدقائك هنا
 
 def is_whitelisted(user_id):
     return user_id in WHITELISTED_USERS
@@ -63,7 +63,32 @@ keys_inventory = {
     }
 }
 
-# ------------------- 5. قاعدة البيانات -------------------
+# ------------------- 5. خدمة اشتراكات التطبيقات (منتوج مستقل) -------------------
+apps_inventory = {
+    "capcut": {
+        "name_ar": "🎬 CapCut PRO",
+        "name_en": "🎬 CapCut PRO",
+        "price": 20,
+        "update_channel": "https://t.me/+zyJW6ZvNp98yMzFk",
+        "link": "https://drive.google.com/uc?export=download&id=YOUR_CAPCUT_ID"
+    },
+    "inshot": {
+        "name_ar": "✂️ Inshot PRI",
+        "name_en": "✂️ Inshot PRI",
+        "price": 15,
+        "update_channel": "https://t.me/+fDPaaezCFKNmZmM0",
+        "link": "https://drive.google.com/uc?export=download&id=YOUR_INSHOT_ID"
+    },
+    "picsart": {
+        "name_ar": "🖌️ Picsart PRO",
+        "name_en": "🖌️ Picsart PRO",
+        "price": 25,
+        "update_channel": "https://t.me/+-6sCG_0g6Mw3ODI0",
+        "link": "https://drive.google.com/uc?export=download&id=YOUR_PICSART_ID"
+    }
+}
+
+# ------------------- 6. قاعدة البيانات -------------------
 def init_db():
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -108,7 +133,7 @@ def add_purchase_record(user_id, record):
     conn.commit()
     conn.close()
 
-# ------------------- 6. دوال إدارة الطلبات -------------------
+# ------------------- 7. دوال إدارة الطلبات -------------------
 def generate_order_id():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
@@ -142,7 +167,7 @@ def get_order(order_id):
     conn.close()
     return row
 
-# ------------------- 7. بيانات طرق الدفع -------------------
+# ------------------- 8. بيانات طرق الدفع -------------------
 PAYMENT_METHODS = {
     "cih": {
         "name_ar": "🏦 CIH BANK",
@@ -167,31 +192,6 @@ PAYMENT_METHODS = {
         "name_en": "💰 Binance",
         "details_ar": "𝙄𝘿: <code>1208575784</code>\n𝙉𝘼𝙈𝙀: مـتـجـــر مـسـلـــم",
         "details_en": "ID: <code>1208575784</code>\nNAME: MOSLIM STORE",
-    }
-}
-
-# ------------------- 8. بيانات التطبيقات (خدمة مستقلة) -------------------
-apps_inventory = {
-    "capcut": {
-        "name_ar": "🎬 CapCut PRO",
-        "name_en": "🎬 CapCut PRO",
-        "price": 20,
-        "update_channel": "https://t.me/+zyJW6ZvNp98yMzFk",
-        "link": "https://drive.google.com/uc?export=download&id=YOUR_CAPCUT_ID"
-    },
-    "inshot": {
-        "name_ar": "✂️ Inshot PRI",
-        "name_en": "✂️ Inshot PRI",
-        "price": 15,
-        "update_channel": "https://t.me/+fDPaaezCFKNmZmM0",
-        "link": "https://drive.google.com/uc?export=download&id=YOUR_INSHOT_ID"
-    },
-    "picsart": {
-        "name_ar": "🖌️ Picsart PRO",
-        "name_en": "🖌️ Picsart PRO",
-        "price": 25,
-        "update_channel": "https://t.me/+-6sCG_0g6Mw3ODI0",
-        "link": "https://drive.google.com/uc?export=download&id=YOUR_PICSART_ID"
     }
 }
 
@@ -673,7 +673,7 @@ def purchase_key(user_id, days, lang):
     price = keys_inventory['dripclient']['prices'][days]
     show_payment_methods(user_id, 'key', days, price)
 
-# ------------------- 15. عمليات الشراء (للقائمة البيضاء) -------------------
+# ------------------- 15. عمليات الشراء -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
