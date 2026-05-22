@@ -26,7 +26,7 @@ def keep_alive():
 # ------------------- 2. إعدادات البوت -------------------
 API_TOKEN = os.environ.get('BOT_TOKEN')
 ADMIN_ID = 8530485909  # المدير الرئيسي (صاحب المتجر)
-ADMIN_IDS = [8530485909, 8615239297]  # أضف معرفات الوكلاء هنا (للقبول/الرفض)
+ADMIN_IDS = [8530485909]  # أضف معرفات الوكلاء هنا (للقبول/الرفض)
 bot = telebot.TeleBot(API_TOKEN)
 
 STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
@@ -58,7 +58,7 @@ keys_inventory = {
         "name_en": "DRIP CLIENT APKMOD 👾",
         "prices": {"1": 20, "3": 25, "7": 50, "15": 78, "30": 120},
         "codes": {
-            "1": [],
+            "1": ["8704258740"],
             "3": [],
             "7": [],
             "15": [],
