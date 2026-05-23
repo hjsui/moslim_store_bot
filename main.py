@@ -25,7 +25,7 @@ def keep_alive():
 
 # ------------------- 2. إعدادات البوت -------------------
 API_TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = 8530485909  # المدير الرئيسي (صاحب المتجر)
+ADMIN_ID = 8530485909  # المدير الرئيسي (صاحب المتجر) - يجب أن يكون هذا معرفك الشخصي
 ADMIN_IDS = [8530485909, 8615239297]  # أضف معرفات الوكلاء هنا (للقبول/الرفض)
 bot = telebot.TeleBot(API_TOKEN)
 
@@ -730,7 +730,7 @@ def process_purchase(call):
         code = codes_inventory[pkg].pop(0)
         bot.send_message(user_id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
         
-        # إشعار خاص للمدير الرئيسي (تم الإصلاح)
+        # إشعار خاص للمدير الرئيسي
         admin_msg = f"🔔 *سحب أدمن (قائمة بيضاء)*\n👤 الادمن: @{call.from_user.username}\n📦 المنتج: {pkg} جوهرة\n💰 السعر: {prices[pkg]} درهم\n🔑 الكود: `{code}`\n⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         try:
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
@@ -763,7 +763,7 @@ def handle_key_buy(call):
         product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
         bot.send_message(user_id, t["keys_purchase_success"].format(product_name, days, keys_inventory[prod_id]["prices"][days], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
         
-        # إشعار خاص للمدير الرئيسي (تم الإصلاح)
+        # إشعار خاص للمدير الرئيسي
         admin_msg = f"🔔 *سحب أدمن (قائمة بيضاء)*\n👤 الادمن: @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {keys_inventory[prod_id]['prices'][days]} درهم\n🔑 المفتاح: `{code}`\n⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         try:
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
@@ -797,7 +797,7 @@ def process_app_purchase(call):
         success_msg = t["order_accepted"].format(product_name, price, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
         bot.send_message(user_id, success_msg, parse_mode="Markdown")
         
-        # إشعار خاص للمدير الرئيسي (موجود أصلاً ويعمل)
+        # إشعار خاص للمدير الرئيسي
         admin_notify = (f"🔔 *سحب أدمن (قائمة بيضاء)*\n"
                         f"👤 الادمن: @{call.from_user.username}\n"
                         f"📦 المنتج: {product_name}\n"
