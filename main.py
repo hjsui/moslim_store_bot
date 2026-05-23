@@ -25,7 +25,7 @@ def keep_alive():
 
 # ------------------- 2. إعدادات البوت -------------------
 API_TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = 8530485909  # المدير الرئيسي (صاحب المتجر) - سيتم إرسال الإشعارات إليه فقط
+ADMIN_ID = 8530485909  # المدير الرئيسي (صاحب المتجر)
 ADMIN_IDS = [8530485909, 8615239297]  # أضف معرفات الوكلاء هنا (للقبول/الرفض)
 bot = telebot.TeleBot(API_TOKEN)
 
@@ -716,7 +716,7 @@ def purchase_key(user_id, days, lang):
     price = keys_inventory['dripclient']['prices'][days]
     show_payment_methods(user_id, 'key', f"dripclient_{days}", price)
 
-# ------------------- 15. عمليات الشراء للقائمة البيضاء (تم الإصلاح الكامل) -------------------
+# ------------------- 15. عمليات الشراء للقائمة البيضاء -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
@@ -730,20 +730,12 @@ def process_purchase(call):
         code = codes_inventory[pkg].pop(0)
         bot.send_message(user_id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
         
-        # ------------------- IMPORTANT FIX -------------------
-        # إرسال إشعار للمدير الرئيسي (ADMIN_ID) عند سحب أي أدمن لأي منتج
-        admin_msg = (f"🔔 *سحب أدمن (قائمة بيضاء)*\n"
-                     f"👤 الادمن: @{call.from_user.username}\n"
-                     f"📦 المنتج: {pkg} جوهرة\n"
-                     f"💰 السعر: {prices[pkg]} درهم\n"
-                     f"🔑 الكود: `{code}`\n"
-                     f"⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        # إرسال إشعار للمدير الرئيسي
+        admin_msg = f"🔔 *سحب أدمن (قائمة بيضاء)*\n👤 الادمن: @{call.from_user.username}\n📦 المنتج: {pkg} جوهرة\n💰 السعر: {prices[pkg]} درهم\n🔑 الكود: `{code}`\n⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         try:
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-            print(f"✅ تم إرسال إشعار للمدير عن سحب {pkg} جوهرة بواسطة {call.from_user.username}")
         except Exception as e:
-            print(f"❌ فشل إرسال الإشعار: {e}")
-        # -------------------------------------------------
+            print(f"[ERROR] لم يتم إرسال الإشعار: {e}")
         
         add_purchase_record(user_id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
         log_admin_withdrawal(user_id, call.from_user.username, 'ff', pkg, code)
@@ -771,20 +763,12 @@ def handle_key_buy(call):
         product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
         bot.send_message(user_id, t["keys_purchase_success"].format(product_name, days, keys_inventory[prod_id]["prices"][days], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
         
-        # ------------------- IMPORTANT FIX -------------------
-        admin_msg = (f"🔔 *سحب أدمن (قائمة بيضاء)*\n"
-                     f"👤 الادمن: @{call.from_user.username}\n"
-                     f"📦 المنتج: {product_name}\n"
-                     f"🗓️ المدة: {days} يوم\n"
-                     f"💰 السعر: {keys_inventory[prod_id]['prices'][days]} درهم\n"
-                     f"🔑 المفتاح: `{code}`\n"
-                     f"⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        # إرسال إشعار للمدير الرئيسي
+        admin_msg = f"🔔 *سحب أدمن (قائمة بيضاء)*\n👤 الادمن: @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {keys_inventory[prod_id]['prices'][days]} درهم\n🔑 المفتاح: `{code}`\n⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         try:
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-            print(f"✅ تم إرسال إشعار للمدير عن سحب مفتاح {product_name} بواسطة {call.from_user.username}")
         except Exception as e:
-            print(f"❌ فشل إرسال الإشعار: {e}")
-        # -------------------------------------------------
+            print(f"[ERROR] لم يتم إرسال الإشعار: {e}")
         
         add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم): {code} - {datetime.now()}")
         log_admin_withdrawal(user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code)
@@ -813,7 +797,7 @@ def process_app_purchase(call):
         success_msg = t["order_accepted"].format(product_name, price, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
         bot.send_message(user_id, success_msg, parse_mode="Markdown")
         
-        # ------------------- IMPORTANT FIX (موجود أصلاً ويعمل) -------------------
+        # إرسال إشعار للمدير الرئيسي
         admin_notify = (f"🔔 *سحب أدمن (قائمة بيضاء)*\n"
                         f"👤 الادمن: @{call.from_user.username}\n"
                         f"📦 المنتج: {product_name}\n"
@@ -823,10 +807,8 @@ def process_app_purchase(call):
                         f"⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         try:
             bot.send_message(ADMIN_ID, admin_notify, parse_mode="Markdown")
-            print(f"✅ تم إرسال إشعار للمدير عن سحب تطبيق {product_name} بواسطة {call.from_user.username}")
         except Exception as e:
-            print(f"❌ فشل إرسال الإشعار: {e}")
-        # -------------------------------------------------
+            print(f"[ERROR] لم يتم إرسال الإشعار: {e}")
         
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
@@ -865,28 +847,39 @@ def back_to_key_products(call):
     bot.answer_callback_query(call.id)
 
 # ------------------- 17. أمر لعرض سجل سحب الأدمن -------------------
-@bot.message_handler(commands=['adminlogs'])
-def show_admin_logs(message):
+@bot.message_handler(commands=['adminstats'])
+def show_admin_stats(message):
     if not is_admin(message.from_user.id):
-        bot.reply_to(message, "غير مسموح")
+        bot.reply_to(message, "⚠️ هذا الأمر مخصص للمديرين فقط.")
         return
+    
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    c.execute("SELECT admin_name, product_type, product_id, code, action_date FROM admin_logs ORDER BY id DESC LIMIT 50")
+    c.execute("SELECT admin_name, product_type, product_id, code, action_date FROM admin_logs ORDER BY id DESC LIMIT 30")
     rows = c.fetchall()
     conn.close()
+    
     if not rows:
-        bot.reply_to(message, "لا توجد سجلات بعد.")
+        bot.reply_to(message, "📭 لا توجد سجلات سحب للأدمن بعد.")
         return
-    text = "📋 *سجل سحب الأدمن:*\n"
+    
+    text = "📊 *آخر عمليات سحب الأدمن (القائمة البيضاء):*\n━━━━━━━━━━━━━━━━━━━━\n"
     for row in rows:
         admin_name, ptype, pid, code, date = row
-        text += f"👤 {admin_name} | {ptype} | {pid} | `{code}` | {date[:16]}\n"
+        if ptype == 'ff':
+            product_info = f"💎 {pid} جوهرة"
+        elif ptype == 'key':
+            product_info = f"🔑 {pid.replace('_', ' - ')}"
+        else:
+            product_info = f"📱 {pid}"
+        date_str = date[:16] if date else "تاريخ غير معروف"
+        text += f"👤 {admin_name}\n📦 {product_info}\n🔑 `{code[:20]}...`\n⏰ {date_str}\n━━━━━━━━━━━━━━━━━━━━\n"
+    
     for part in [text[i:i+4000] for i in range(0, len(text), 4000)]:
         bot.send_message(message.chat.id, part, parse_mode="Markdown")
 
 # ------------------- 18. التشغيل -------------------
 if __name__ == "__main__":
     keep_alive()
-    print("✅ متجر مسلم يعمل بكفاءة مع جميع الخدمات (جواهر، مفاتيح، تطبيقات، وكلاء متعددين).")
+    print("✅ متجر مسلم يعمل بكفاءة مع جميع الخدمات وسجل سحب الأدمن.")
     bot.infinity_polling()
