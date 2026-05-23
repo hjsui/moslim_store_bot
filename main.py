@@ -730,12 +730,12 @@ def process_purchase(call):
         code = codes_inventory[pkg].pop(0)
         bot.send_message(user_id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
         
-        # إشعار خاص للمدير الرئيسي
+        # إشعار خاص للمدير الرئيسي (تم الإصلاح)
         admin_msg = f"🔔 *سحب أدمن (قائمة بيضاء)*\n👤 الادمن: @{call.from_user.username}\n📦 المنتج: {pkg} جوهرة\n💰 السعر: {prices[pkg]} درهم\n🔑 الكود: `{code}`\n⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         try:
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-        except:
-            pass
+        except Exception as e:
+            print(f"خطأ في إرسال الإشعار: {e}")
         
         add_purchase_record(user_id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
         log_admin_withdrawal(user_id, call.from_user.username, 'ff', pkg, code)
@@ -763,12 +763,12 @@ def handle_key_buy(call):
         product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
         bot.send_message(user_id, t["keys_purchase_success"].format(product_name, days, keys_inventory[prod_id]["prices"][days], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
         
-        # إشعار خاص للمدير الرئيسي
+        # إشعار خاص للمدير الرئيسي (تم الإصلاح)
         admin_msg = f"🔔 *سحب أدمن (قائمة بيضاء)*\n👤 الادمن: @{call.from_user.username}\n📦 المنتج: {product_name}\n🗓️ المدة: {days} يوم\n💰 السعر: {keys_inventory[prod_id]['prices'][days]} درهم\n🔑 المفتاح: `{code}`\n⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         try:
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-        except:
-            pass
+        except Exception as e:
+            print(f"خطأ في إرسال الإشعار: {e}")
         
         add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم): {code} - {datetime.now()}")
         log_admin_withdrawal(user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code)
@@ -797,7 +797,7 @@ def process_app_purchase(call):
         success_msg = t["order_accepted"].format(product_name, price, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
         bot.send_message(user_id, success_msg, parse_mode="Markdown")
         
-        # إشعار خاص للمدير الرئيسي
+        # إشعار خاص للمدير الرئيسي (موجود أصلاً ويعمل)
         admin_notify = (f"🔔 *سحب أدمن (قائمة بيضاء)*\n"
                         f"👤 الادمن: @{call.from_user.username}\n"
                         f"📦 المنتج: {product_name}\n"
@@ -807,8 +807,8 @@ def process_app_purchase(call):
                         f"⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         try:
             bot.send_message(ADMIN_ID, admin_notify, parse_mode="Markdown")
-        except:
-            pass
+        except Exception as e:
+            print(f"خطأ في إرسال الإشعار: {e}")
         
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
