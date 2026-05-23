@@ -26,7 +26,7 @@ def keep_alive():
 # ------------------- 2. إعدادات البوت -------------------
 API_TOKEN = os.environ.get('BOT_TOKEN')
 ADMIN_ID = 8530485909  # المدير الرئيسي (صاحب المتجر)
-ADMIN_IDS = [8530485909]  # أضف معرفات الوكلاء هنا (للقبول/الرفض)
+ADMIN_IDS = [8530485909, 8615239297]  # أضف معرفات الوكلاء هنا (للقبول/الرفض)
 bot = telebot.TeleBot(API_TOKEN)
 
 STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
@@ -58,7 +58,7 @@ keys_inventory = {
         "name_en": "DRIP CLIENT APKMOD 👾",
         "prices": {"1": 20, "3": 25, "7": 50, "15": 78, "30": 120},
         "codes": {
-            "1": ["8704258740"],
+            "1": [],
             "3": [],
             "7": [],
             "15": [],
@@ -388,30 +388,24 @@ def handle_messages(message):
         return
 
     text = message.text
-    # القائمة الرئيسية للأقسام (تم تعديل ترتيب الأزرار)
     if text in [t["shop_now"], t["services"]]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(t["other_games"], t["ff_services"])
         markup.add(t["back_to_main"], t["apps_service"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
-    # خدمات فري فاير الداخلية (تم تبديل ترتيب الأزرار)
     elif text == t["ff_services"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        markup.add(t["keys_service"], t["ff_topup"])   # 🔑 ثم 💎
+        markup.add(t["keys_service"], t["ff_topup"])
         markup.add(t["back_to_sections"])
         bot.send_message(message.chat.id, "🎮 *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
-    # شحن ألعاب أخرى
     elif text == t["other_games"]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(t["back_to_sections"])
         bot.send_message(message.chat.id, t["other_games_text"], reply_markup=markup, parse_mode="Markdown")
-    # اشتراكات التطبيقات (خدمة مستقلة)
     elif text == t["apps_service"]:
         show_apps_products(message, lang)
-    # شحن جواهر فري فاير
     elif text == t["ff_topup"]:
         show_ff_packages(message, lang)
-    # إنشاء مفاتيح الهكرات
     elif text == t["keys_service"]:
         show_keys_products(message, lang)
     elif text == t["back_to_main"]:
@@ -571,7 +565,6 @@ def process_proof_photo(message, order_id):
         bot.register_next_step_handler_by_chat_id(user_id, lambda msg: process_proof_photo(msg, order_id))
         return
 
-    # رسالة انتظار فورية
     waiting_msg = bot.send_message(user_id, t["proof_received"], parse_mode="Markdown")
 
     photo_id = message.photo[-1].file_id
@@ -607,7 +600,6 @@ def process_proof_photo(message, order_id):
             bot.send_photo(admin, photo_id, caption=admin_msg, reply_markup=markup_admin, parse_mode="HTML")
         except:
             pass
-    # تحديث رسالة الانتظار إلى تأكيد الاستلام
     bot.edit_message_text("📸 تم استلام إثبات الدفع! سيتم مراجعته من قبل الإدارة قريباً.", chat_id=user_id, message_id=waiting_msg.message_id, parse_mode="Markdown")
 
 # ------------------- 14. قبول ورفض الطلبات -------------------
@@ -796,15 +788,12 @@ def process_app_purchase(call):
         bot.answer_callback_query(call.id, t["app_no_stock"], show_alert=True)
         return
     
-    # التحقق من القائمة البيضاء أولاً
     if is_whitelisted(user_id):
-        # تسليم مباشر (مجاناً) مع إشعار للمدير
         product_name = app_data["name_ar"] if lang == 'ar' else app_data["name_en"]
         download_link = app_data.get("link", "")
         channel_link = app_data.get("update_channel", "")
         price = app_data["price"]
         
-        # رسالة نجاح للمستخدم الأدمن
         success_msg = t["order_accepted"].format(product_name, price, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
         bot.send_message(user_id, success_msg, parse_mode="Markdown")
         
@@ -821,7 +810,6 @@ def process_app_purchase(call):
         except:
             pass
         
-        # تسجيل العملية في جدول admin_logs (بدون كود، نضع رابط كمرجع)
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
         c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
@@ -831,7 +819,6 @@ def process_app_purchase(call):
         
         bot.answer_callback_query(call.id, "🎉 تم تسليم التطبيق بنجاح!")
     else:
-        # المستخدم العادي: يمر بعملية الدفع
         price = app_data["price"]
         show_payment_methods(user_id, 'app', app_id, price)
         bot.answer_callback_query(call.id)
