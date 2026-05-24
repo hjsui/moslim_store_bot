@@ -25,16 +25,13 @@ def keep_alive():
 
 # ------------------- 2. إعدادات البوت -------------------
 API_TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = 8530485909  # المدير الرئيسي (لأغراض إدارية أخرى)
+ADMIN_ID = 8530485909  # المدير الرئيسي (لأغراض أخرى)
 ADMIN_IDS = [8530485909]  # وكلاء القبول/الرفض
-# معرف القناة الخاصة بالسجلات (يجب إضافته في Render كمتغير بيئة)
 LOG_CHANNEL_ID = os.environ.get('LOG_CHANNEL_ID')
 if LOG_CHANNEL_ID:
     LOG_CHANNEL_ID = int(LOG_CHANNEL_ID)
-else:
-    # إذا لم تجده في البيئة، يمكنك وضعه يدوياً هنا (رقم سالب)
-    # LOG_CHANNEL_ID = -1001234567890
-    pass
+# إذا لم يتم تعيينه في البيئة، يمكنك وضعه يدوياً هنا:
+# LOG_CHANNEL_ID = -1001234567890
 
 bot = telebot.TeleBot(API_TOKEN)
 
@@ -43,7 +40,7 @@ CHANNEL_PROOFS = "https://t.me/moslim_store1"
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
 # ------------------- 3. القائمة البيضاء -------------------
-WHITELISTED_USERS = [8530485909, 8615239297]  # الأدمن والوكلاء الذين يسحبون مجاناً
+WHITELISTED_USERS = [8530485909, 8615239297]  # الوكلاء الذين يسحبون مجاناً
 
 def is_whitelisted(user_id):
     return user_id in WHITELISTED_USERS
@@ -118,14 +115,6 @@ def init_db():
     conn.commit()
     conn.close()
 init_db()
-
-def log_admin_withdrawal(admin_id, admin_name, product_type, product_id, code):
-    conn = sqlite3.connect('moslim_store.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
-              (admin_id, admin_name, product_type, product_id, code, datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
 
 def get_lang(user_id):
     conn = sqlite3.connect('moslim_store.db')
@@ -725,33 +714,22 @@ def purchase_key(user_id, days, lang):
     price = keys_inventory['dripclient']['prices'][days]
     show_payment_methods(user_id, 'key', f"dripclient_{days}", price)
 
-# ------------------- 15. دالة موحدة لتسجيل السحب وإرسال التقرير إلى القناة -------------------
-def log_and_notify_withdrawal(admin_id, admin_username, product_name, price, extra_info="", code_or_link=None):
-    """
-    تسجيل السحب في قاعدة البيانات وإرسال تقرير إلى القناة المخصصة.
-    """
-    # تسجيل في جدول admin_logs
-    conn = sqlite3.connect('moslim_store.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
-              (admin_id, admin_username, 'custom', product_name, str(code_or_link)[:200], datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
-
-    # إرسال التقرير إلى القناة
-    if LOG_CHANNEL_ID:
-        msg = f"📋 *تقرير سحب (قائمة بيضاء)*\n━━━━━━━━━━━━\n👤 الوكيل: @{admin_username}\n📦 المنتج: {product_name}\n💰 السعر: {price} درهم\n"
-        if code_or_link:
-            if "http" in str(code_or_link):
-                msg += f"🔗 رابط: [اضغط هنا]({code_or_link})\n"
-            else:
-                msg += f"🔑 الكود: `{code_or_link}`\n"
-        msg += extra_info
-        msg += f"⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n━━━━━━━━━━━━"
-        try:
-            bot.send_message(LOG_CHANNEL_ID, msg, parse_mode="Markdown")
-        except Exception as e:
-            print(f"فشل إرسال التقرير إلى القناة: {e}")
+# ------------------- 15. دالة إرسال تقرير السحب إلى القناة -------------------
+def send_withdrawal_log(admin_username, product_name, price, extra_info="", code_or_link=None):
+    if not LOG_CHANNEL_ID:
+        return
+    msg = f"📋 *تقرير سحب (قائمة بيضاء)*\n━━━━━━━━━━━━\n👤 الوكيل: @{admin_username}\n📦 المنتج: {product_name}\n💰 السعر: {price} درهم\n"
+    if code_or_link:
+        if "http" in str(code_or_link):
+            msg += f"🔗 رابط: [اضغط هنا]({code_or_link})\n"
+        else:
+            msg += f"🔑 الكود: `{code_or_link}`\n"
+    msg += extra_info
+    msg += f"⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n━━━━━━━━━━━━"
+    try:
+        bot.send_message(LOG_CHANNEL_ID, msg, parse_mode="Markdown")
+    except Exception as e:
+        print(f"فشل إرسال التقرير إلى القناة: {e}")
 
 # ------------------- 16. عمليات الشراء للقائمة البيضاء -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
@@ -767,12 +745,18 @@ def process_purchase(call):
         code = codes_inventory[pkg].pop(0)
         bot.send_message(user_id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
         
-        # إضافة سجل الشراء للمستخدم
         add_purchase_record(user_id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
         
-        # تسجيل السحب وإرسال التقرير
-        log_and_notify_withdrawal(
-            admin_id=user_id,
+        # تسجيل في جدول admin_logs
+        conn = sqlite3.connect('moslim_store.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                  (user_id, call.from_user.username, 'ff', pkg, code, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+        
+        # إرسال التقرير إلى القناة
+        send_withdrawal_log(
             admin_username=call.from_user.username,
             product_name=f"{pkg} جوهرة",
             price=prices[pkg],
@@ -805,8 +789,14 @@ def handle_key_buy(call):
         
         add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم): {code} - {datetime.now()}")
         
-        log_and_notify_withdrawal(
-            admin_id=user_id,
+        conn = sqlite3.connect('moslim_store.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                  (user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+        
+        send_withdrawal_log(
             admin_username=call.from_user.username,
             product_name=product_name,
             price=keys_inventory[prod_id]["prices"][days],
@@ -839,8 +829,14 @@ def process_app_purchase(call):
         success_msg = t["order_accepted"].format(product_name, price, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
         bot.send_message(user_id, success_msg, parse_mode="Markdown")
         
-        log_and_notify_withdrawal(
-            admin_id=user_id,
+        conn = sqlite3.connect('moslim_store.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                  (user_id, call.from_user.username, 'app', app_id, download_link, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+        
+        send_withdrawal_log(
             admin_username=call.from_user.username,
             product_name=product_name,
             price=price,
@@ -877,34 +873,7 @@ def back_to_key_products(call):
     bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
 
-# ------------------- 18. أمر لعرض سجل السحوبات -------------------
-@bot.message_handler(commands=['withdrawals'])
-def show_withdrawals(message):
-    if not is_admin(message.from_user.id):
-        bot.reply_to(message, "⛔ غير مسموح. هذا الأمر للمديرين فقط.")
-        return
-    conn = sqlite3.connect('moslim_store.db')
-    c = conn.cursor()
-    c.execute("SELECT admin_name, product_type, product_id, code, action_date FROM admin_logs ORDER BY id DESC LIMIT 100")
-    rows = c.fetchall()
-    conn.close()
-    if not rows:
-        bot.reply_to(message, "📭 لا توجد سجلات سحب بعد.")
-        return
-    text = "📋 *آخر 100 عملية سحب:*\n━━━━━━━━━━━━\n"
-    for row in rows:
-        admin_name, ptype, pid, code, date = row
-        if ptype == 'ff':
-            product = f"💎 جواهر {pid}"
-        elif ptype == 'key':
-            product = f"🔑 مفتاح {pid}"
-        else:
-            product = f"📱 {pid}"
-        text += f"👤 {admin_name}\n{product}\n`{code[:20]}...`\n📅 {date[:16]}\n━━━━━━━━━━━━\n"
-    for part in [text[i:i+4000] for i in range(0, len(text), 4000)]:
-        bot.send_message(message.chat.id, part, parse_mode="Markdown")
-
-# ------------------- 19. التشغيل -------------------
+# ------------------- 18. التشغيل -------------------
 if __name__ == "__main__":
     keep_alive()
     print("✅ متجر مسلم يعمل بكفاءة مع جميع الخدمات وقناة السجلات.")
