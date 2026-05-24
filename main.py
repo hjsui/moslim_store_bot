@@ -40,7 +40,7 @@ CHANNEL_PROOFS = "https://t.me/moslim_store1"
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
 # ------------------- 3. القائمة البيضاء -------------------
-WHITELISTED_USERS = [8530485909, 8615239297]  # الوكلاء الذين يسحبون مجاناً
+WHITELISTED_USERS = [8615239297]  # الوكلاء الذين يسحبون مجاناً
 
 def is_whitelisted(user_id):
     return user_id in WHITELISTED_USERS
@@ -50,11 +50,11 @@ def is_admin(user_id):
 
 # ------------------- 4. أكواد الجواهر والمفاتيح -------------------
 codes_inventory = {
-    "110": ["4212878473275898", "4662933479894874", "2832586864754929", "2869135500382282"],
+    "110": ["4662933479894874", "2832586864754929", "2869135500382282"],
     "231": ["8924464665769889"],
-    "583": ["5787057855711530"],
+    "583": [],
     "1188": [],
-    "2420": ["6505308166203670"]
+    "2420": []
 }
 prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
 
@@ -80,21 +80,21 @@ apps_inventory = {
         "name_en": "🎬 CapCut PRO",
         "price": 20,
         "update_channel": "https://t.me/+zyJW6ZvNp98yMzFk",
-        "link": "https://drive.google.com/uc?export=download&id=YOUR_CAPCUT_ID"
+        "link": "https://t.me/+zyJW6ZvNp98yMzFk"
     },
     "inshot": {
         "name_ar": "✂️ Inshot PRI",
         "name_en": "✂️ Inshot PRI",
         "price": 15,
         "update_channel": "https://t.me/+fDPaaezCFKNmZmM0",
-        "link": "https://drive.google.com/uc?export=download&id=YOUR_INSHOT_ID"
+        "link": "https://t.me/+fDPaaezCFKNmZmM0"
     },
     "picsart": {
         "name_ar": "🖌️ Picsart PRO",
         "name_en": "🖌️ Picsart PRO",
         "price": 25,
         "update_channel": "https://t.me/+-6sCG_0g6Mw3ODI0",
-        "link": "https://drive.google.com/uc?export=download&id=YOUR_PICSART_ID"
+        "link": "https://t.me/+-6sCG_0g6Mw3ODI0"
     }
 }
 
