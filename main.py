@@ -27,9 +27,8 @@ def keep_alive():
     t.start()
 
 # ------------------- 2. إعدادات البوت -------------------
-API_TOKEN = os.environ.get('BOT_TOKEN')
-if not API_TOKEN:
-    raise ValueError("BOT_TOKEN is missing")
+# ضع التوكن الحقيقي بدلاً من هذا المثال
+BOT_TOKEN = "8325861290:AAEz_RWg1sFCyvw7brpzY4vWqgZl7tzan6U"   # <--- استبدله بتوكن البوت الحقيقي
 
 ADMIN_IDS = [int(x.strip()) for x in os.environ.get('ADMIN_IDS', '').split(',') if x.strip()]
 WHITELISTED_USERS = [int(x.strip()) for x in os.environ.get('WHITELISTED_USERS', '').split(',') if x.strip()]
@@ -43,7 +42,7 @@ GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 AI_MODEL = os.environ.get('AI_MODEL', 'llama3-70b-8192')
 AI_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-bot = telebot.TeleBot(API_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN)
 CHANNEL_PROOFS = "https://t.me/moslim_store1"
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
@@ -79,7 +78,6 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS admin_logs 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_id INTEGER, admin_name TEXT,
                   product_type TEXT, product_id TEXT, code TEXT, action_date TEXT)''')
-    # جداول المخزون الديناميكي
     c.execute('''CREATE TABLE IF NOT EXISTS ff_codes
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, quantity TEXT, code TEXT, used INTEGER DEFAULT 0)''')
     c.execute('''CREATE TABLE IF NOT EXISTS key_codes
@@ -89,44 +87,33 @@ def init_db():
 
 init_db()
 
-# تحويل الأكواد القديمة إلى قاعدة البيانات (للمحافظة على المخزون الحالي)
+# ترحيل الأكواد القديمة (مرة واحدة)
 def migrate_old_codes():
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    # فري فاير
-    old_ff = {
-        "110": ["2832586864754929", "2869135500382282", "8772380136887137", "0510503734238548", "9317053383056636", "8344827763739908"],
-        "231": ["8924464665769889", "7222546102183551", "6019105566204732", "6266884345783498", "5934678521152776", "5582470301677821"],
-        "583": ["5665636272178740", "8171354030947632", "0689246122768008", "2191436437180436", "2409185512395486", "4479277919446726"],
-        "1188": ["0157588037982228", "2514893008691065", "9405455819525108"],
-        "2420": ["8054042222321677", "7801845005665882", "7240425674452852"]
-    }
-    for qty, codes in old_ff.items():
-        for code in codes:
-            c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (qty, code))
-    # مفاتيح
-    old_keys = {
-        "dripclient": {
-            "1": ["8704258740"],
-            "30": ["6732684380", "7481744555"]
+    c.execute("SELECT COUNT(*) FROM ff_codes")
+    if c.fetchone()[0] == 0:
+        old_ff = {
+            "110": ["2832586864754929", "2869135500382282", "8772380136887137", "0510503734238548", "9317053383056636", "8344827763739908"],
+            "231": ["8924464665769889", "7222546102183551", "6019105566204732", "6266884345783498", "5934678521152776", "5582470301677821"],
+            "583": ["5665636272178740", "8171354030947632", "0689246122768008", "2191436437180436", "2409185512395486", "4479277919446726"],
+            "1188": ["0157588037982228", "2514893008691065", "9405455819525108"],
+            "2420": ["8054042222321677", "7801845005665882", "7240425674452852"]
         }
-    }
-    for prod_id, dur_dict in old_keys.items():
-        for dur, codes in dur_dict.items():
+        for qty, codes in old_ff.items():
             for code in codes:
-                c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, dur, code))
-    conn.commit()
+                c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (qty, code))
+        old_keys = {"dripclient": {"1": ["8704258740"], "30": ["6732684380", "7481744555"]}}
+        for prod_id, dur_dict in old_keys.items():
+            for dur, codes in dur_dict.items():
+                for code in codes:
+                    c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, dur, code))
+        conn.commit()
     conn.close()
 
-# نتحقق إن كانت الجداول فارغة وننقل القديم
-conn_temp = sqlite3.connect('moslim_store.db')
-c_temp = conn_temp.cursor()
-c_temp.execute("SELECT COUNT(*) FROM ff_codes")
-if c_temp.fetchone()[0] == 0:
-    migrate_old_codes()
-conn_temp.close()
+migrate_old_codes()
 
-# دوال التعامل مع المخزون الجديد
+# دوال المخزون
 def get_ff_code(quantity):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -405,9 +392,9 @@ T = {
 }
 
 # ------------------- 9. الذكاء الاصطناعي (Groq API) -------------------
-user_ai_mode = set()  # user_id في وضع المحادثة مع AI
+user_ai_mode = set()
 
-def ai_chat(user_message, context_history=None):
+def ai_chat(user_message):
     if not GROQ_API_KEY:
         return None
     headers = {
@@ -463,7 +450,7 @@ def show_main_menu(message, lang):
     markup.row(t["shop_now"], t["services"])
     markup.row(t["add_balance"], t["profile"])
     markup.row(t["how_to_use"], t["support"])
-    markup.row(t["proofs"], t["ai_chat"])   # زر الذكاء الاصطناعي
+    markup.row(t["proofs"], t["ai_chat"])
     user_count = get_verified_count()
     msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
     bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
@@ -513,14 +500,12 @@ def handle_messages(message):
     verified, lang = user
     t = T[lang]
 
-    # إذا كان المستخدم في وضع AI
     if user_id in user_ai_mode:
         if message.text == '/exit':
             user_ai_mode.discard(user_id)
             bot.send_message(user_id, t["ai_exit"], parse_mode="Markdown")
             conn.close()
             return
-        # إرسال طلب إلى AI
         processing_msg = bot.send_message(user_id, t["ai_processing"], parse_mode="Markdown")
         ai_response = ai_chat(message.text)
         if ai_response:
@@ -543,13 +528,11 @@ def handle_messages(message):
 
     text = message.text
 
-    # زر الذكاء الاصطناعي
     if text == t["ai_chat"]:
         show_ai_welcome(message, lang)
         conn.close()
         return
 
-    # بقية الأزرار كما هي
     if text in [t["shop_now"], t["services"]]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(t["other_games"], t["ff_services"])
@@ -607,13 +590,12 @@ def handle_messages(message):
 def show_ff_packages(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=2)
-    # الحصول على الباقات المتاحة من المخزون الفعلي
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT DISTINCT quantity FROM ff_codes WHERE used=0")
     quantities = [row[0] for row in c.fetchall()]
     conn.close()
-    prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}  # أسعار ثابتة
+    prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
     for qty in quantities:
         price = prices.get(qty, "?")
         markup.add(types.InlineKeyboardButton(f"💎 {qty} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{qty}"))
@@ -623,8 +605,7 @@ def show_ff_packages(message, lang):
 def show_keys_products(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=1)
-    # لدينا منتج واحد حالياً dripclient
-    markup.add(types.InlineKeyboardButton("🔑 DRIP CLIENT APKMOD 👾", callback_data=f"key_prod_dripclient"))
+    markup.add(types.InlineKeyboardButton("🔑 DRIP CLIENT APKMOD 👾", callback_data="key_prod_dripclient"))
     bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
 def show_apps_products(message, lang):
@@ -719,7 +700,6 @@ def process_proof_photo(message, order_id):
         return
 
     waiting_msg = bot.send_message(user_id, t["proof_received"], parse_mode="Markdown")
-
     photo_id = message.photo[-1].file_id
     update_order_status(order_id, 'waiting_admin', proof_photo_id=photo_id)
     order = get_order(order_id)
@@ -793,8 +773,7 @@ def finalize_order(order_id, accepted, admin_id=None):
                 bot.send_message(user_id, success_msg, parse_mode="Markdown")
                 add_purchase_record(user_id, f"📦 {product_id}💎 ({amount} DH): {code} - {datetime.now()}")
                 update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
-                # تسجيل سحب في القناة
-                send_withdrawal_log(admin_username=f"admin_{admin_id}", product_name=f"{product_id} جوهرة", price=amount, code_or_link=code)
+                send_withdrawal_log(f"admin_{admin_id}", f"{product_id} جوهرة", amount, code_or_link=code)
             else:
                 bot.send_message(user_id, t["out_of_stock"], parse_mode="Markdown")
                 update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
@@ -809,7 +788,7 @@ def finalize_order(order_id, accepted, admin_id=None):
                     bot.send_message(user_id, success_msg, parse_mode="Markdown")
                     add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم) - {amount} 💰: {code} - {datetime.now()}")
                     update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
-                    send_withdrawal_log(admin_username=f"admin_{admin_id}", product_name=product_name, price=amount, extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
+                    send_withdrawal_log(f"admin_{admin_id}", product_name, amount, extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
                 else:
                     bot.send_message(user_id, t["no_stock"], parse_mode="Markdown")
                     update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
@@ -829,12 +808,11 @@ def finalize_order(order_id, accepted, admin_id=None):
                 bot.send_message(user_id, success_msg, parse_mode="Markdown")
                 add_purchase_record(user_id, f"📱 {product_name} ({amount} DH): تم التحميل - {datetime.now()}")
                 update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
-                send_withdrawal_log(admin_username=f"admin_{admin_id}", product_name=product_name, price=amount, code_or_link=app["link"])
+                send_withdrawal_log(f"admin_{admin_id}", product_name, amount, code_or_link=app["link"])
             else:
                 bot.send_message(user_id, t["app_no_stock"], parse_mode="Markdown")
                 update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
     else:
-        # رفض الطلب
         product_name = "المنتج"
         reject_msg = t["order_rejected"].format(product_name)
         markup = types.InlineKeyboardMarkup()
@@ -850,7 +828,7 @@ def purchase_key(user_id, days, lang):
     price = {"1":20,"3":25,"7":50,"15":78,"30":120}.get(days,0)
     show_payment_methods(user_id, 'key', f"dripclient_{days}", price)
 
-# ------------------- 15. دالة إرسال تقرير السحب إلى القناة -------------------
+# ------------------- 15. إرسال التقرير لقناة السجلات -------------------
 def send_withdrawal_log(admin_username, product_name, price, extra_info="", code_or_link=None):
     if not LOG_CHANNEL_ID:
         return
@@ -867,7 +845,7 @@ def send_withdrawal_log(admin_username, product_name, price, extra_info="", code
     except Exception as e:
         print(f"فشل إرسال التقرير إلى القناة: {e}")
 
-# ------------------- 16. عمليات الشراء للقائمة البيضاء (للوكلاء) -------------------
+# ------------------- 16. شراء القائمة البيضاء -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
@@ -877,16 +855,16 @@ def process_purchase(call):
     if is_whitelisted(user_id):
         code = get_ff_code(pkg)
         if code:
-            bot.send_message(user_id, t["purchase_success"].format(pkg, {"110":"11","231":"21","583":"52","1188":"100","2420":"222"}[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
-            add_purchase_record(user_id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
-            # تسجيل في جدول admin_logs
+            price_map = {"110":"11","231":"21","583":"52","1188":"100","2420":"222"}
+            bot.send_message(user_id, t["purchase_success"].format(pkg, price_map[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
+            add_purchase_record(user_id, f"📦 {pkg}💎 ({price_map[pkg]} DH): {code} - {datetime.now()}")
             conn = sqlite3.connect('moslim_store.db')
             c = conn.cursor()
             c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
                       (user_id, call.from_user.username, 'ff', pkg, code, datetime.now().isoformat()))
             conn.commit()
             conn.close()
-            send_withdrawal_log(admin_username=call.from_user.username, product_name=f"{pkg} جوهرة", price={"110":"11","231":"21","583":"52","1188":"100","2420":"222"}[pkg], code_or_link=code)
+            send_withdrawal_log(call.from_user.username, f"{pkg} جوهرة", price_map[pkg], code_or_link=code)
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
             bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
@@ -918,7 +896,7 @@ def handle_key_buy(call):
                       (user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code, datetime.now().isoformat()))
             conn.commit()
             conn.close()
-            send_withdrawal_log(admin_username=call.from_user.username, product_name=product_name, price=price, extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
+            send_withdrawal_log(call.from_user.username, product_name, price, extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
             bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
@@ -968,13 +946,13 @@ def process_app_purchase(call):
                   (user_id, call.from_user.username, 'app', app_id, app["link"], datetime.now().isoformat()))
         conn.commit()
         conn.close()
-        send_withdrawal_log(admin_username=call.from_user.username, product_name=product_name, price=app["price"], code_or_link=app["link"])
+        send_withdrawal_log(call.from_user.username, product_name, app["price"], code_or_link=app["link"])
         bot.answer_callback_query(call.id, "🎉 تم تسليم التطبيق بنجاح!")
     else:
         show_payment_methods(user_id, 'app', app_id, app["price"])
         bot.answer_callback_query(call.id)
 
-# ------------------- 17. أوامر الإدارة (إضافة وحذف الأكواد) -------------------
+# ------------------- 17. أوامر الإدارة -------------------
 @bot.message_handler(commands=['add_ff'])
 def add_ff_command(message):
     if not is_admin(message.from_user.id):
@@ -1078,4 +1056,5 @@ def back_to_key_products(call):
 if __name__ == "__main__":
     keep_alive()
     print("✅ متجر مسلم يعمل بكفاءة مع جميع الخدمات، AI، وإدارة المخزون.")
+    bot.delete_webhook()   # يحل مشكلة 409 conflict
     bot.infinity_polling()
