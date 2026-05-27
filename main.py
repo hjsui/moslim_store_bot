@@ -8,6 +8,9 @@ import time
 import random
 import string
 import os
+import requests
+import json
+from collections import defaultdict
 
 # ------------------- 1. خادم الاستمرارية -------------------
 app = Flask('')
@@ -25,80 +28,44 @@ def keep_alive():
 
 # ------------------- 2. إعدادات البوت -------------------
 API_TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = 8530485909  # المدير الرئيسي (لأغراض أخرى)
-ADMIN_IDS = [8530485909]  # وكلاء القبول/الرفض
+if not API_TOKEN:
+    raise ValueError("BOT_TOKEN is missing")
+
+ADMIN_IDS = [int(x.strip()) for x in os.environ.get('ADMIN_IDS', '').split(',') if x.strip()]
+WHITELISTED_USERS = [int(x.strip()) for x in os.environ.get('WHITELISTED_USERS', '').split(',') if x.strip()]
+STORE_PASSWORD = os.environ.get('STORE_PASSWORD', 'default123')
 LOG_CHANNEL_ID = os.environ.get('LOG_CHANNEL_ID')
 if LOG_CHANNEL_ID:
     LOG_CHANNEL_ID = int(LOG_CHANNEL_ID)
-# إذا لم يتم تعيينه في البيئة، يمكنك وضعه يدوياً هنا:
-# LOG_CHANNEL_ID = -1001234567890
+
+# AI settings
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+AI_MODEL = os.environ.get('AI_MODEL', 'llama3-70b-8192')
+AI_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 bot = telebot.TeleBot(API_TOKEN)
-
-STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
 CHANNEL_PROOFS = "https://t.me/moslim_store1"
 ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
 
-# ------------------- 3. القائمة البيضاء -------------------
-WHITELISTED_USERS = [8615239297]  # الوكلاء الذين يسحبون مجاناً
+# Rate limiting
+user_last_msg = defaultdict(float)
+RATE_LIMIT_SEC = 10  # seconds between messages
+
+def is_rate_limited(user_id):
+    now = time.time()
+    if now - user_last_msg[user_id] < RATE_LIMIT_SEC:
+        return True
+    user_last_msg[user_id] = now
+    return False
+
+# ------------------- 3. دوال المساعد -----------------------------------
+def is_admin(user_id):
+    return user_id in ADMIN_IDS
 
 def is_whitelisted(user_id):
     return user_id in WHITELISTED_USERS
 
-def is_admin(user_id):
-    return user_id in ADMIN_IDS
-
-# ------------------- 4. أكواد الجواهر والمفاتيح -------------------
-codes_inventory = {
-    "110": ["2832586864754929", "2869135500382282", "8772380136887137", "0510503734238548", "9317053383056636", "8344827763739908"],
-    "231": ["8924464665769889", "7222546102183551", "6019105566204732", "6266884345783498", "5934678521152776", "5582470301677821"],
-    "583": ["5665636272178740", "8171354030947632", "0689246122768008", "2191436437180436", "2409185512395486", "4479277919446726"],
-    "1188": ["0157588037982228", "2514893008691065", "9405455819525108"],
-    "2420": ["8054042222321677", "7801845005665882", "7240425674452852"]
-}
-prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}
-
-keys_inventory = {
-    "dripclient": {
-        "name_ar": "DRIP CLIENT APKMOD 👾",
-        "name_en": "DRIP CLIENT APKMOD 👾",
-        "prices": {"1": 20, "3": 25, "7": 50, "15": 78, "30": 120},
-        "codes": {
-            "1": ["8704258740"],
-            "3": [],
-            "7": [],
-            "15": [],
-            "30": ["6732684380", "7481744555"]
-        }
-    }
-}
-
-# ------------------- 5. بيانات التطبيقات -------------------
-apps_inventory = {
-    "capcut": {
-        "name_ar": "🎬 CapCut PRO",
-        "name_en": "🎬 CapCut PRO",
-        "price": 20,
-        "update_channel": "https://t.me/+zyJW6ZvNp98yMzFk",
-        "link": "https://t.me/+zyJW6ZvNp98yMzFk"
-    },
-    "inshot": {
-        "name_ar": "✂️ Inshot PRI",
-        "name_en": "✂️ Inshot PRI",
-        "price": 15,
-        "update_channel": "https://t.me/+fDPaaezCFKNmZmM0",
-        "link": "https://t.me/+fDPaaezCFKNmZmM0"
-    },
-    "picsart": {
-        "name_ar": "🖌️ Picsart PRO",
-        "name_en": "🖌️ Picsart PRO",
-        "price": 25,
-        "update_channel": "https://t.me/+-6sCG_0g6Mw3ODI0",
-        "link": "https://t.me/+-6sCG_0g6Mw3ODI0"
-    }
-}
-
-# ------------------- 6. قاعدة البيانات -------------------
+# ------------------- 4. قاعدة البيانات المتطورة -------------------
 def init_db():
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -112,10 +79,127 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS admin_logs 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_id INTEGER, admin_name TEXT,
                   product_type TEXT, product_id TEXT, code TEXT, action_date TEXT)''')
+    # جداول المخزون الديناميكي
+    c.execute('''CREATE TABLE IF NOT EXISTS ff_codes
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, quantity TEXT, code TEXT, used INTEGER DEFAULT 0)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS key_codes
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, duration TEXT, code TEXT, used INTEGER DEFAULT 0)''')
     conn.commit()
     conn.close()
+
 init_db()
 
+# تحويل الأكواد القديمة إلى قاعدة البيانات (للمحافظة على المخزون الحالي)
+def migrate_old_codes():
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    # فري فاير
+    old_ff = {
+        "110": ["2832586864754929", "2869135500382282", "8772380136887137", "0510503734238548", "9317053383056636", "8344827763739908"],
+        "231": ["8924464665769889", "7222546102183551", "6019105566204732", "6266884345783498", "5934678521152776", "5582470301677821"],
+        "583": ["5665636272178740", "8171354030947632", "0689246122768008", "2191436437180436", "2409185512395486", "4479277919446726"],
+        "1188": ["0157588037982228", "2514893008691065", "9405455819525108"],
+        "2420": ["8054042222321677", "7801845005665882", "7240425674452852"]
+    }
+    for qty, codes in old_ff.items():
+        for code in codes:
+            c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (qty, code))
+    # مفاتيح
+    old_keys = {
+        "dripclient": {
+            "1": ["8704258740"],
+            "30": ["6732684380", "7481744555"]
+        }
+    }
+    for prod_id, dur_dict in old_keys.items():
+        for dur, codes in dur_dict.items():
+            for code in codes:
+                c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, dur, code))
+    conn.commit()
+    conn.close()
+
+# نتحقق إن كانت الجداول فارغة وننقل القديم
+conn_temp = sqlite3.connect('moslim_store.db')
+c_temp = conn_temp.cursor()
+c_temp.execute("SELECT COUNT(*) FROM ff_codes")
+if c_temp.fetchone()[0] == 0:
+    migrate_old_codes()
+conn_temp.close()
+
+# دوال التعامل مع المخزون الجديد
+def get_ff_code(quantity):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT id, code FROM ff_codes WHERE quantity=? AND used=0 LIMIT 1", (quantity,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE ff_codes SET used=1 WHERE id=?", (row[0],))
+        conn.commit()
+        conn.close()
+        return row[1]
+    conn.close()
+    return None
+
+def add_ff_code(quantity, code):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (quantity, code))
+    conn.commit()
+    conn.close()
+
+def del_ff_code(quantity, code):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM ff_codes WHERE quantity=? AND code=? AND used=0 LIMIT 1", (quantity, code))
+    conn.commit()
+    conn.close()
+    return c.rowcount > 0
+
+def get_ff_stock():
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT quantity, COUNT(*) FROM ff_codes WHERE used=0 GROUP BY quantity")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_key_code(product_id, duration):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT id, code FROM key_codes WHERE product_id=? AND duration=? AND used=0 LIMIT 1", (product_id, duration))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE key_codes SET used=1 WHERE id=?", (row[0],))
+        conn.commit()
+        conn.close()
+        return row[1]
+    conn.close()
+    return None
+
+def add_key_code(product_id, duration, code):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (product_id, duration, code))
+    conn.commit()
+    conn.close()
+
+def del_key_code(product_id, duration, code):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM key_codes WHERE product_id=? AND duration=? AND code=? AND used=0 LIMIT 1", (product_id, duration, code))
+    conn.commit()
+    conn.close()
+    return c.rowcount > 0
+
+def get_key_stock():
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT product_id, duration, COUNT(*) FROM key_codes WHERE used=0 GROUP BY product_id, duration")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+# ------------------- 5. دوال القاعدة العامة -------------------
 def get_lang(user_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -146,7 +230,7 @@ def add_purchase_record(user_id, record):
     conn.commit()
     conn.close()
 
-# ------------------- 7. دوال إدارة الطلبات -------------------
+# ------------------- 6. الطلبات -------------------
 def generate_order_id():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
@@ -180,7 +264,7 @@ def get_order(order_id):
     conn.close()
     return row
 
-# ------------------- 8. بيانات طرق الدفع -------------------
+# ------------------- 7. طرق الدفع -------------------
 PAYMENT_METHODS = {
     "cih": {
         "name_ar": "🏦 CIH BANK",
@@ -208,7 +292,7 @@ PAYMENT_METHODS = {
     }
 }
 
-# ------------------- 9. قاموس الترجمة -------------------
+# ------------------- 8. الترجمة -------------------
 T = {
     "ar": {
         "shop_now": "🛍️ تسوق الآن",
@@ -232,7 +316,7 @@ T = {
         "choose_app": "🔍 *اختر التطبيق الذي تريده:*",
         "choose_payment": "💳 *اختر طريقة الدفع:*",
         "ask_proof": "📸 *أرسل صورة إثبات الدفع الآن*",
-        "proof_received": "🔄 جاري معالجة طلبك... يرجى الانتظار.",
+        "proof_received": "📸 تم استلام إثبات الدفع بنجاح!\n🔄 جاري معالجة طلبك آلياً... سيتم التسليم خلال دقائق.\n💚 شكراً لانتظارك، نحن نعمل بسرعة لإرضائك.",
         "order_accepted": "✅ *تم قبول طلبك بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n💰 السعر: {} درهم\n🔗 رابط التحميل: [اضغط هنا]({})\n📢 لمتابعة التحديثات: [انضم للقناة]({})\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "order_rejected": "❌ *عذراً، تم رفض طلبك* ❌\n━━━━━━━━━━━━\n📦 المنتج: {}\n⚠️ يرجى التحقق من صحة إثبات الدفع وإعادة المحاولة.\n━━━━━━━━━━━━\n💡 يمكنك الضغط على الزر أدناه لتغيير طريقة الدفع.",
         "already_paid": "⚠️ لديك طلب قيد المراجعة بالفعل. يرجى الانتظار أو التواصل مع الدعم.",
@@ -257,7 +341,12 @@ T = {
         "confirm_purchase": "🎉 تم الشراء بنجاح! استلم الكود أعلاه",
         "welcome_after_lang": "🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨\n⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡\n📢 *آراء العملاء:* [قناتنا مليئة بالإثباتات]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *اضغط /start لتفعيل المتجر* 🔓",
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
-        "inline_proofs_btn": "📢 قناة الإثباتات"
+        "inline_proofs_btn": "📢 قناة الإثباتات",
+        "ai_chat": "💬 اسأل المساعد الذكي",
+        "ai_welcome": "🧠 *مرحباً بك في المساعد الذكي لمتجر مسلم!*\nيمكنك سؤالي عن أي منتج، طريقة الشراء، أو حتى طلب مساعدة.\n\n📌 *أمثلة:*\n- كيف أشحن جواهر فري فاير؟\n- ما هي أسعار التطبيقات؟\n- ساعدني في اختيار باقة\n\n✍️ *اكتب سؤالك الآن (أو /exit للخروج)*",
+        "ai_processing": "🤔 *جاري التفكير...*",
+        "ai_error": "⚠️ عذراً، الذكاء الاصطناعي غير متاح حالياً. تواصل مع الدعم.",
+        "ai_exit": "🔚 تم الخروج من وضع المساعد. يمكنك العودة بالضغط على الزر."
     },
     "en": {
         "shop_now": "🛍️ Shop Now",
@@ -281,7 +370,7 @@ T = {
         "choose_app": "🔍 *Choose the app you want:*",
         "choose_payment": "💳 *Choose payment method:*",
         "ask_proof": "📸 *Send your payment proof screenshot now*",
-        "proof_received": "🔄 Processing your order... Please wait.",
+        "proof_received": "📸 Payment proof received successfully!\n🔄 Automatically processing your order... Delivery within minutes.\n💚 Thank you for waiting, we work fast for you.",
         "order_accepted": "✅ *Your order has been accepted!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n💰 Price: {} MAD\n🔗 Download link: [Click here]({})\n📢 For updates: [Join channel]({})\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See proofs: [Click here]({})",
         "order_rejected": "❌ *Sorry, your order has been rejected* ❌\n━━━━━━━━━━━━\n📦 Product: {}\n⚠️ Please check your payment proof and try again.\n━━━━━━━━━━━━\n💡 Press the button below to change payment method.",
         "already_paid": "⚠️ You have a pending order. Please wait or contact support.",
@@ -306,11 +395,52 @@ T = {
         "confirm_purchase": "🎉 Purchase successful! Get your code above",
         "welcome_after_lang": "🛍️ *MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *Digital services - Instant top-up - Subscriptions* ✨\n⚡ *Speed - Trust - Unbeatable prices* ⚡\n📢 *Customer reviews:* [Our channel is full of proofs]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *Press /start to activate the store* 🔓",
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
-        "inline_proofs_btn": "📢 Proofs Channel"
+        "inline_proofs_btn": "📢 Proofs Channel",
+        "ai_chat": "💬 Ask AI Assistant",
+        "ai_welcome": "🧠 *Welcome to Moslim Store AI Assistant!*\nAsk me about products, purchase steps, or help.\n\n📌 *Examples:*\n- How to top up Free Fire diamonds?\n- App prices?\n- Help me choose a package\n\n✍️ *Type your question now (or /exit to quit)*",
+        "ai_processing": "🤔 *Thinking...*",
+        "ai_error": "⚠️ AI assistant is temporarily unavailable. Contact support.",
+        "ai_exit": "🔚 Exited AI mode. You can return by pressing the button."
     }
 }
 
-# ------------------- 10. دوال واجهة المستخدم -------------------
+# ------------------- 9. الذكاء الاصطناعي (Groq API) -------------------
+user_ai_mode = set()  # user_id في وضع المحادثة مع AI
+
+def ai_chat(user_message, context_history=None):
+    if not GROQ_API_KEY:
+        return None
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    system_prompt = (
+        "أنت مساعد ودود لمتجر Moslim Store الرقمي. المتجر يبيع: جواهر فري فاير، مفاتيح برامج، اشتراكات تطبيقات (CapCut, Inshot, Picsart). "
+        "ساعد المستخدم بلطف، شجعه على الشراء، اشرح له الخطوات، لكن لا تغيره بطريقة تنويم مغناطيسي. قدم معلومات دقيقة عن الأسعار والمنتجات. "
+        "إذا سأل عن شيء خارج المتجر، اعتذر بلطف ووجهه للدعم البشري. استخدم العربية أو الإنجليزية حسب لغة المستخدم."
+    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
+    ]
+    payload = {
+        "model": AI_MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 500
+    }
+    try:
+        response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=10)
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            print(f"AI error: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        print(f"AI exception: {e}")
+        return None
+
+# ------------------- 10. واجهة المستخدم -------------------
 def send_lang_selection(chat_id):
     photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
     caption = "🌍 *Please select your language / اختر لغتك*"
@@ -333,13 +463,20 @@ def show_main_menu(message, lang):
     markup.row(t["shop_now"], t["services"])
     markup.row(t["add_balance"], t["profile"])
     markup.row(t["how_to_use"], t["support"])
-    markup.row(t["proofs"])
+    markup.row(t["proofs"], t["ai_chat"])   # زر الذكاء الاصطناعي
     user_count = get_verified_count()
     msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
     bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
+def show_ai_welcome(message, lang):
+    t = T[lang]
+    user_ai_mode.add(message.from_user.id)
+    bot.send_message(message.chat.id, t["ai_welcome"], parse_mode="Markdown")
+
 @bot.message_handler(commands=['start'])
 def start(message):
+    if is_rate_limited(message.from_user.id):
+        return
     user_id = message.from_user.id
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -363,6 +500,8 @@ def start(message):
 # ------------------- 11. معالج الرسائل العامة -------------------
 @bot.message_handler(func=lambda msg: True)
 def handle_messages(message):
+    if is_rate_limited(message.from_user.id):
+        return
     user_id = message.from_user.id
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -373,6 +512,23 @@ def handle_messages(message):
         return
     verified, lang = user
     t = T[lang]
+
+    # إذا كان المستخدم في وضع AI
+    if user_id in user_ai_mode:
+        if message.text == '/exit':
+            user_ai_mode.discard(user_id)
+            bot.send_message(user_id, t["ai_exit"], parse_mode="Markdown")
+            conn.close()
+            return
+        # إرسال طلب إلى AI
+        processing_msg = bot.send_message(user_id, t["ai_processing"], parse_mode="Markdown")
+        ai_response = ai_chat(message.text)
+        if ai_response:
+            bot.edit_message_text(ai_response, chat_id=user_id, message_id=processing_msg.message_id, parse_mode="Markdown")
+        else:
+            bot.edit_message_text(t["ai_error"], chat_id=user_id, message_id=processing_msg.message_id, parse_mode="Markdown")
+        conn.close()
+        return
 
     if not verified:
         if message.text == STORE_PASSWORD:
@@ -386,6 +542,14 @@ def handle_messages(message):
         return
 
     text = message.text
+
+    # زر الذكاء الاصطناعي
+    if text == t["ai_chat"]:
+        show_ai_welcome(message, lang)
+        conn.close()
+        return
+
+    # بقية الأزرار كما هي
     if text in [t["shop_now"], t["services"]]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(t["other_games"], t["ff_services"])
@@ -443,49 +607,40 @@ def handle_messages(message):
 def show_ff_packages(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=2)
-    for pkg in codes_inventory:
-        price = prices[pkg]
-        markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
+    # الحصول على الباقات المتاحة من المخزون الفعلي
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT DISTINCT quantity FROM ff_codes WHERE used=0")
+    quantities = [row[0] for row in c.fetchall()]
+    conn.close()
+    prices = {"110": "11", "231": "21", "583": "52", "1188": "100", "2420": "222"}  # أسعار ثابتة
+    for qty in quantities:
+        price = prices.get(qty, "?")
+        markup.add(types.InlineKeyboardButton(f"💎 {qty} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{qty}"))
     markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
     bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
 def show_keys_products(message, lang):
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=1)
-    for prod_id, prod_data in keys_inventory.items():
-        btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
-        markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
+    # لدينا منتج واحد حالياً dripclient
+    markup.add(types.InlineKeyboardButton("🔑 DRIP CLIENT APKMOD 👾", callback_data=f"key_prod_dripclient"))
     bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
 def show_apps_products(message, lang):
     t = T[lang]
+    apps_inventory = {
+        "capcut": {"name_ar": "🎬 CapCut PRO", "name_en": "🎬 CapCut PRO", "price": 20},
+        "inshot": {"name_ar": "✂️ Inshot PRI", "name_en": "✂️ Inshot PRI", "price": 15},
+        "picsart": {"name_ar": "🖌️ Picsart PRO", "name_en": "🖌️ Picsart PRO", "price": 25}
+    }
     markup = types.InlineKeyboardMarkup(row_width=2)
     for app_id, app_data in apps_inventory.items():
         btn_text = app_data["name_ar"] if lang == 'ar' else app_data["name_en"]
         markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"app_buy_{app_id}"))
     bot.send_message(message.chat.id, t["choose_app"], reply_markup=markup, parse_mode="Markdown")
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
-def choose_duration(call):
-    prod_id = call.data.split('_')[2]
-    lang = get_lang(call.from_user.id)
-    t = T[lang]
-    prod_data = keys_inventory.get(prod_id)
-    if not prod_data:
-        bot.answer_callback_query(call.id, "❌ المنتج غير موجود", show_alert=True)
-        return
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    for days, price in prod_data["prices"].items():
-        markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 💰", callback_data=f"key_buy_{prod_id}_{days}"))
-    markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
-    bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
-    bot.answer_callback_query(call.id)
-    try:
-        bot.delete_message(call.message.chat.id, call.message.message_id)
-    except:
-        pass
-
-# ------------------- 13. دوال نظام الدفع -------------------
+# ------------------- 13. نظام الدفع -------------------
 def show_payment_methods(user_id, product_type, product_id, amount):
     lang = get_lang(user_id)
     t = T[lang]
@@ -579,8 +734,8 @@ def process_proof_photo(message, order_id):
         parts = product_id.split('_')
         product_name = f"مفتاح DRIP CLIENT - {parts[1] if len(parts)>1 else product_id} يوم"
     else:
-        app_data = apps_inventory.get(product_id, {})
-        product_name = app_data.get("name_ar", "تطبيق") if lang == 'ar' else app_data.get("name_en", "App")
+        app_data = {"capcut":"CapCut","inshot":"Inshot","picsart":"Picsart"}.get(product_id, "تطبيق")
+        product_name = app_data
 
     admin_msg = (f"<b>🔔 طلب دفع جديد</b>\n━━━━━━━━━━━━\n"
                  f"<b>🆔 الطلب:</b> <code>{order_id}</code>\n"
@@ -598,7 +753,7 @@ def process_proof_photo(message, order_id):
             bot.send_photo(admin, photo_id, caption=admin_msg, reply_markup=markup_admin, parse_mode="HTML")
         except:
             pass
-    bot.edit_message_text("📸 تم استلام إثبات الدفع! سيتم مراجعته من قبل الإدارة قريباً.", chat_id=user_id, message_id=waiting_msg.message_id, parse_mode="Markdown")
+    bot.edit_message_text("📸 تم استلام إثبات الدفع! جاري مراجعته من قبل الإدارة قريباً.", chat_id=user_id, message_id=waiting_msg.message_id, parse_mode="Markdown")
 
 # ------------------- 14. قبول ورفض الطلبات -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('admin_accept_'))
@@ -632,17 +787,14 @@ def finalize_order(order_id, accepted, admin_id=None):
 
     if accepted:
         if product_type == 'ff':
-            if product_id in codes_inventory and codes_inventory[product_id]:
-                code = codes_inventory[product_id].pop(0)
+            code = get_ff_code(product_id)
+            if code:
                 success_msg = t["purchase_success"].format(product_id, amount, code, ADMIN_CONTACT, CHANNEL_PROOFS)
                 bot.send_message(user_id, success_msg, parse_mode="Markdown")
                 add_purchase_record(user_id, f"📦 {product_id}💎 ({amount} DH): {code} - {datetime.now()}")
-                for admin in ADMIN_IDS:
-                    try:
-                        bot.send_message(admin, f"✅ تم قبول الطلب {order_id} وتسليم الكود: {code} للمستخدم @{order[1]}")
-                    except:
-                        pass
                 update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
+                # تسجيل سحب في القناة
+                send_withdrawal_log(admin_username=f"admin_{admin_id}", product_name=f"{product_id} جوهرة", price=amount, code_or_link=code)
             else:
                 bot.send_message(user_id, t["out_of_stock"], parse_mode="Markdown")
                 update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
@@ -650,18 +802,14 @@ def finalize_order(order_id, accepted, admin_id=None):
             parts = product_id.split('_')
             if len(parts) == 2:
                 key_id, days = parts[0], parts[1]
-                if key_id in keys_inventory and days in keys_inventory[key_id]["codes"] and keys_inventory[key_id]["codes"][days]:
-                    code = keys_inventory[key_id]["codes"][days].pop(0)
-                    product_name = keys_inventory[key_id]["name_ar"] if lang == 'ar' else keys_inventory[key_id]["name_en"]
+                code = get_key_code(key_id, days)
+                if code:
+                    product_name = "DRIP CLIENT APKMOD"
                     success_msg = t["keys_purchase_success"].format(product_name, days, amount, code, ADMIN_CONTACT, CHANNEL_PROOFS)
                     bot.send_message(user_id, success_msg, parse_mode="Markdown")
                     add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم) - {amount} 💰: {code} - {datetime.now()}")
-                    for admin in ADMIN_IDS:
-                        try:
-                            bot.send_message(admin, f"✅ تم قبول الطلب {order_id} وتسليم المفتاح: {code} للمستخدم @{order[1]}")
-                        except:
-                            pass
                     update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
+                    send_withdrawal_log(admin_username=f"admin_{admin_id}", product_name=product_name, price=amount, extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
                 else:
                     bot.send_message(user_id, t["no_stock"], parse_mode="Markdown")
                     update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
@@ -669,56 +817,44 @@ def finalize_order(order_id, accepted, admin_id=None):
                 bot.send_message(user_id, t["no_stock"], parse_mode="Markdown")
                 update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
         elif product_type == 'app':
-            app_data = apps_inventory.get(product_id)
-            if app_data:
-                product_name = app_data["name_ar"] if lang == 'ar' else app_data["name_en"]
-                download_link = app_data.get("link", "")
-                channel_link = app_data.get("update_channel", "")
-                success_msg = t["order_accepted"].format(product_name, amount, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
+            apps_links = {
+                "capcut": {"link": "https://t.me/+zyJW6ZvNp98yMzFk", "channel": "https://t.me/+zyJW6ZvNp98yMzFk", "name_ar": "CapCut PRO", "name_en": "CapCut PRO"},
+                "inshot": {"link": "https://t.me/+fDPaaezCFKNmZmM0", "channel": "https://t.me/+fDPaaezCFKNmZmM0", "name_ar": "Inshot PRI", "name_en": "Inshot PRI"},
+                "picsart": {"link": "https://t.me/+-6sCG_0g6Mw3ODI0", "channel": "https://t.me/+-6sCG_0g6Mw3ODI0", "name_ar": "Picsart PRO", "name_en": "Picsart PRO"}
+            }
+            app = apps_links.get(product_id)
+            if app:
+                product_name = app["name_ar"] if lang=='ar' else app["name_en"]
+                success_msg = t["order_accepted"].format(product_name, amount, app["link"], app["channel"], ADMIN_CONTACT, CHANNEL_PROOFS)
                 bot.send_message(user_id, success_msg, parse_mode="Markdown")
                 add_purchase_record(user_id, f"📱 {product_name} ({amount} DH): تم التحميل - {datetime.now()}")
-                for admin in ADMIN_IDS:
-                    try:
-                        bot.send_message(admin, f"✅ تم قبول الطلب {order_id} (تطبيق {product_name}) للمستخدم @{order[1]}")
-                    except:
-                        pass
                 update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
+                send_withdrawal_log(admin_username=f"admin_{admin_id}", product_name=product_name, price=amount, code_or_link=app["link"])
             else:
                 bot.send_message(user_id, t["app_no_stock"], parse_mode="Markdown")
                 update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
     else:
-        if product_type == 'ff':
-            product_name = f"جواهر فري فاير ({product_id} جوهرة)"
-        elif product_type == 'key':
-            parts = product_id.split('_')
-            product_name = f"مفتاح DRIP CLIENT - {parts[1] if len(parts)>1 else product_id} يوم"
-        else:
-            app_data = apps_inventory.get(product_id, {})
-            product_name = app_data.get("name_ar", "تطبيق") if lang == 'ar' else app_data.get("name_en", "App")
+        # رفض الطلب
+        product_name = "المنتج"
         reject_msg = t["order_rejected"].format(product_name)
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("🔄 تغيير طريقة الدفع", callback_data=f"change_payment_{order_id}"))
         bot.send_message(user_id, reject_msg, reply_markup=markup, parse_mode="Markdown")
         update_order_status(order_id, 'rejected', admin_action=f'reject_by_{admin_id}')
-        for admin in ADMIN_IDS:
-            try:
-                bot.send_message(admin, f"❌ تم رفض الطلب {order_id} بواسطة مدير")
-            except:
-                pass
 
 def purchase_ff_package(user_id, pkg, lang):
-    amount = prices[pkg]
+    amount = {"110":"11","231":"21","583":"52","1188":"100","2420":"222"}.get(pkg, "0")
     show_payment_methods(user_id, 'ff', pkg, amount)
 
 def purchase_key(user_id, days, lang):
-    price = keys_inventory['dripclient']['prices'][days]
+    price = {"1":20,"3":25,"7":50,"15":78,"30":120}.get(days,0)
     show_payment_methods(user_id, 'key', f"dripclient_{days}", price)
 
 # ------------------- 15. دالة إرسال تقرير السحب إلى القناة -------------------
 def send_withdrawal_log(admin_username, product_name, price, extra_info="", code_or_link=None):
     if not LOG_CHANNEL_ID:
         return
-    msg = f"📋 *تقرير سحب (قائمة بيضاء)*\n━━━━━━━━━━━━\n👤 الوكيل: @{admin_username}\n📦 المنتج: {product_name}\n💰 السعر: {price} درهم\n"
+    msg = f"📋 *تقرير سحب (قائمة بيضاء أو قبول إداري)*\n━━━━━━━━━━━━\n👤 الوكيل/المدير: @{admin_username}\n📦 المنتج: {product_name}\n💰 السعر: {price} درهم\n"
     if code_or_link:
         if "http" in str(code_or_link):
             msg += f"🔗 رابط: [اضغط هنا]({code_or_link})\n"
@@ -731,39 +867,29 @@ def send_withdrawal_log(admin_username, product_name, price, extra_info="", code
     except Exception as e:
         print(f"فشل إرسال التقرير إلى القناة: {e}")
 
-# ------------------- 16. عمليات الشراء للقائمة البيضاء -------------------
+# ------------------- 16. عمليات الشراء للقائمة البيضاء (للوكلاء) -------------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
 def process_purchase(call):
     pkg = call.data.split('_')[1]
     user_id = call.from_user.id
     lang = get_lang(user_id)
     t = T[lang]
-    if pkg not in codes_inventory or not codes_inventory[pkg]:
-        bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
-        return
     if is_whitelisted(user_id):
-        code = codes_inventory[pkg].pop(0)
-        bot.send_message(user_id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
-        
-        add_purchase_record(user_id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
-        
-        # تسجيل في جدول admin_logs
-        conn = sqlite3.connect('moslim_store.db')
-        c = conn.cursor()
-        c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
-                  (user_id, call.from_user.username, 'ff', pkg, code, datetime.now().isoformat()))
-        conn.commit()
-        conn.close()
-        
-        # إرسال التقرير إلى القناة
-        send_withdrawal_log(
-            admin_username=call.from_user.username,
-            product_name=f"{pkg} جوهرة",
-            price=prices[pkg],
-            code_or_link=code
-        )
-        
-        bot.answer_callback_query(call.id, t["confirm_purchase"])
+        code = get_ff_code(pkg)
+        if code:
+            bot.send_message(user_id, t["purchase_success"].format(pkg, {"110":"11","231":"21","583":"52","1188":"100","2420":"222"}[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
+            add_purchase_record(user_id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
+            # تسجيل في جدول admin_logs
+            conn = sqlite3.connect('moslim_store.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                      (user_id, call.from_user.username, 'ff', pkg, code, datetime.now().isoformat()))
+            conn.commit()
+            conn.close()
+            send_withdrawal_log(admin_username=call.from_user.username, product_name=f"{pkg} جوهرة", price={"110":"11","231":"21","583":"52","1188":"100","2420":"222"}[pkg], code_or_link=code)
+            bot.answer_callback_query(call.id, t["confirm_purchase"])
+        else:
+            bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
     else:
         purchase_ff_package(user_id, pkg, lang)
         bot.answer_callback_query(call.id)
@@ -779,35 +905,43 @@ def handle_key_buy(call):
     user_id = call.from_user.id
     lang = get_lang(user_id)
     t = T[lang]
-    if prod_id not in keys_inventory or days not in keys_inventory[prod_id]["codes"] or not keys_inventory[prod_id]["codes"][days]:
-        bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
-        return
     if is_whitelisted(user_id):
-        code = keys_inventory[prod_id]["codes"][days].pop(0)
-        product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
-        bot.send_message(user_id, t["keys_purchase_success"].format(product_name, days, keys_inventory[prod_id]["prices"][days], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
-        
-        add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم): {code} - {datetime.now()}")
-        
-        conn = sqlite3.connect('moslim_store.db')
-        c = conn.cursor()
-        c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
-                  (user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code, datetime.now().isoformat()))
-        conn.commit()
-        conn.close()
-        
-        send_withdrawal_log(
-            admin_username=call.from_user.username,
-            product_name=product_name,
-            price=keys_inventory[prod_id]["prices"][days],
-            extra_info=f"🗓️ المدة: {days} يوم\n",
-            code_or_link=code
-        )
-        
-        bot.answer_callback_query(call.id, t["confirm_purchase"])
+        code = get_key_code(prod_id, days)
+        if code:
+            product_name = "DRIP CLIENT APKMOD"
+            price = {"1":20,"3":25,"7":50,"15":78,"30":120}[days]
+            bot.send_message(user_id, t["keys_purchase_success"].format(product_name, days, price, code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
+            add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم): {code} - {datetime.now()}")
+            conn = sqlite3.connect('moslim_store.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                      (user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code, datetime.now().isoformat()))
+            conn.commit()
+            conn.close()
+            send_withdrawal_log(admin_username=call.from_user.username, product_name=product_name, price=price, extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
+            bot.answer_callback_query(call.id, t["confirm_purchase"])
+        else:
+            bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
     else:
         purchase_key(user_id, days, lang)
         bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
+def choose_duration(call):
+    prod_id = call.data.split('_')[2]
+    lang = get_lang(call.from_user.id)
+    t = T[lang]
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    durations = {"1":20, "3":25, "7":50, "15":78, "30":120}
+    for days, price in durations.items():
+        markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 💰", callback_data=f"key_buy_{prod_id}_{days}"))
+    markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
+    bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
+    bot.answer_callback_query(call.id)
+    try:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+    except:
+        pass
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('app_buy_'))
 def process_app_purchase(call):
@@ -815,42 +949,111 @@ def process_app_purchase(call):
     user_id = call.from_user.id
     lang = get_lang(user_id)
     t = T[lang]
-    app_data = apps_inventory.get(app_id)
-    if not app_data:
+    apps_info = {
+        "capcut": {"name_ar": "CapCut PRO", "name_en": "CapCut PRO", "price": 20, "link": "https://t.me/+zyJW6ZvNp98yMzFk", "channel": "https://t.me/+zyJW6ZvNp98yMzFk"},
+        "inshot": {"name_ar": "Inshot PRI", "name_en": "Inshot PRI", "price": 15, "link": "https://t.me/+fDPaaezCFKNmZmM0", "channel": "https://t.me/+fDPaaezCFKNmZmM0"},
+        "picsart": {"name_ar": "Picsart PRO", "name_en": "Picsart PRO", "price": 25, "link": "https://t.me/+-6sCG_0g6Mw3ODI0", "channel": "https://t.me/+-6sCG_0g6Mw3ODI0"}
+    }
+    app = apps_info.get(app_id)
+    if not app:
         bot.answer_callback_query(call.id, t["app_no_stock"], show_alert=True)
         return
-    
     if is_whitelisted(user_id):
-        product_name = app_data["name_ar"] if lang == 'ar' else app_data["name_en"]
-        download_link = app_data.get("link", "")
-        channel_link = app_data.get("update_channel", "")
-        price = app_data["price"]
-        
-        success_msg = t["order_accepted"].format(product_name, price, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
+        product_name = app["name_ar"] if lang == 'ar' else app["name_en"]
+        success_msg = t["order_accepted"].format(product_name, app["price"], app["link"], app["channel"], ADMIN_CONTACT, CHANNEL_PROOFS)
         bot.send_message(user_id, success_msg, parse_mode="Markdown")
-        
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
         c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
-                  (user_id, call.from_user.username, 'app', app_id, download_link, datetime.now().isoformat()))
+                  (user_id, call.from_user.username, 'app', app_id, app["link"], datetime.now().isoformat()))
         conn.commit()
         conn.close()
-        
-        send_withdrawal_log(
-            admin_username=call.from_user.username,
-            product_name=product_name,
-            price=price,
-            extra_info=f"📢 قناة التحديثات: [انضم]({channel_link})\n",
-            code_or_link=download_link
-        )
-        
+        send_withdrawal_log(admin_username=call.from_user.username, product_name=product_name, price=app["price"], code_or_link=app["link"])
         bot.answer_callback_query(call.id, "🎉 تم تسليم التطبيق بنجاح!")
     else:
-        price = app_data["price"]
-        show_payment_methods(user_id, 'app', app_id, price)
+        show_payment_methods(user_id, 'app', app_id, app["price"])
         bot.answer_callback_query(call.id)
 
-# ------------------- 17. أزرار العودة -------------------
+# ------------------- 17. أوامر الإدارة (إضافة وحذف الأكواد) -------------------
+@bot.message_handler(commands=['add_ff'])
+def add_ff_command(message):
+    if not is_admin(message.from_user.id):
+        return
+    args = message.text.split()
+    if len(args) != 3:
+        bot.reply_to(message, "❗ الاستخدام: /add_ff <الكمية> <الكود>\nمثال: /add_ff 110 ABC123")
+        return
+    quantity, code = args[1], args[2]
+    add_ff_code(quantity, code)
+    bot.reply_to(message, f"✅ تم إضافة الكود `{code}` للكمية {quantity}")
+
+@bot.message_handler(commands=['del_ff'])
+def del_ff_command(message):
+    if not is_admin(message.from_user.id):
+        return
+    args = message.text.split()
+    if len(args) != 3:
+        bot.reply_to(message, "❗ الاستخدام: /del_ff <الكمية> <الكود>")
+        return
+    quantity, code = args[1], args[2]
+    if del_ff_code(quantity, code):
+        bot.reply_to(message, f"✅ تم حذف الكود `{code}` للكمية {quantity}")
+    else:
+        bot.reply_to(message, f"❌ الكود غير موجود أو مستخدم بالفعل")
+
+@bot.message_handler(commands=['stock_ff'])
+def stock_ff_command(message):
+    if not is_admin(message.from_user.id):
+        return
+    stock = get_ff_stock()
+    if not stock:
+        bot.reply_to(message, "📦 مخزون فري فاير فارغ")
+        return
+    lines = ["📊 *مخزون الجواهر:*"]
+    for qty, count in stock:
+        lines.append(f"💎 {qty} جوهرة : {count} كود")
+    bot.reply_to(message, "\n".join(lines), parse_mode="Markdown")
+
+@bot.message_handler(commands=['add_key'])
+def add_key_command(message):
+    if not is_admin(message.from_user.id):
+        return
+    args = message.text.split()
+    if len(args) != 4:
+        bot.reply_to(message, "❗ الاستخدام: /add_key <product_id> <المدة> <الكود>\nمثال: /add_key dripclient 30 KEY123")
+        return
+    prod_id, duration, code = args[1], args[2], args[3]
+    add_key_code(prod_id, duration, code)
+    bot.reply_to(message, f"✅ تم إضافة مفتاح {prod_id} مدة {duration} يوم")
+
+@bot.message_handler(commands=['del_key'])
+def del_key_command(message):
+    if not is_admin(message.from_user.id):
+        return
+    args = message.text.split()
+    if len(args) != 4:
+        bot.reply_to(message, "❗ الاستخدام: /del_key <product_id> <المدة> <الكود>")
+        return
+    prod_id, duration, code = args[1], args[2], args[3]
+    if del_key_code(prod_id, duration, code):
+        bot.reply_to(message, f"✅ تم حذف المفتاح {code}")
+    else:
+        bot.reply_to(message, "❌ المفتاح غير موجود")
+
+@bot.message_handler(commands=['stock_key'])
+def stock_key_command(message):
+    if not is_admin(message.from_user.id):
+        return
+    stock = get_key_stock()
+    if not stock:
+        bot.reply_to(message, "📦 مخزون المفاتيح فارغ")
+        return
+    lines = ["📊 *مخزون المفاتيح:*"]
+    for prod, dur, count in stock:
+        lines.append(f"🔑 {prod} - {dur} يوم : {count} مفتاح")
+    bot.reply_to(message, "\n".join(lines), parse_mode="Markdown")
+
+# ------------------- 18. أزرار العودة -------------------
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_ff_services")
 def back_to_ff_services(call):
     lang = get_lang(call.from_user.id)
@@ -867,14 +1070,12 @@ def back_to_key_products(call):
     lang = get_lang(call.from_user.id)
     t = T[lang]
     markup = types.InlineKeyboardMarkup(row_width=1)
-    for prod_id, prod_data in keys_inventory.items():
-        btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
-        markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
+    markup.add(types.InlineKeyboardButton("🔑 DRIP CLIENT APKMOD 👾", callback_data="key_prod_dripclient"))
     bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
     bot.answer_callback_query(call.id)
 
-# ------------------- 18. التشغيل -------------------
+# ------------------- 19. تشغيل البوت -------------------
 if __name__ == "__main__":
     keep_alive()
-    print("✅ متجر مسلم يعمل بكفاءة مع جميع الخدمات وقناة السجلات.")
+    print("✅ متجر مسلم يعمل بكفاءة مع جميع الخدمات، AI، وإدارة المخزون.")
     bot.infinity_polling()
