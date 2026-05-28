@@ -1,5 +1,6 @@
 # handlers.py
 # جميع معالجات البوت (Callbacks, Message handlers, Commands)
+# تم تعديل خدمات السوشل ميديا: إزالة التصنيفات، عرض خدمات المنصة مباشرة، أيقونة 📢
 
 import telebot
 from telebot import types
@@ -19,12 +20,11 @@ from payment_methods import PAYMENT_METHODS
 from languages import T
 from social_api import (
     get_services, add_order, get_order_status, calculate_price_with_profit,
-    organize_services_by_platform, get_platforms_list, get_services_by_platform_and_category
+    organize_services_by_platform, get_platforms_list, get_all_services_by_platform
 )
 
 # ========== متغيرات مؤقتة لحالة المستخدمين ==========
 user_social_state = {}  # للسوشل ميديا (نظام الجلسات الجديد)
-user_social_temp = {}   # احتياطي (سيتم دمجه)
 
 # متغير لتخزين الخدمات المنظمة بعد تحميلها
 organized_services_cache = None
@@ -226,61 +226,43 @@ def register_all_handlers(bot):
                 except:
                     pass
 
-    # ========== دوال السوشل ميديا الجديدة ==========
+    # ========== دوال السوشل ميديا (المعدلة: إزالة التصنيفات، أيقونة 📢) ==========
     def show_social_platforms(user_id, lang):
-        """عرض قائمة المنصات المتاحة"""
         t = T[lang]
         organized = get_organized_services()
         if not organized:
-            bot.send_message(user_id, "⚠️ لا توجد خدمات متاحة حالياً.")
+            bot.send_message(user_id, t["social_no_services"])
             return
         platforms = get_platforms_list(organized)
         markup = types.InlineKeyboardMarkup(row_width=2)
         for platform in platforms:
-            btn_text = f"📱 {platform['name'].capitalize()} ({platform['service_count']})"
+            # استخدام أيقونة 📢 بدلاً من 📱 (يمكن تغييرها لاحقاً)
+            btn_text = f"📢 {platform['name'].capitalize()} ({platform['service_count']})"
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"social_platform_{platform['id']}"))
         markup.add(types.InlineKeyboardButton("🔙 العودة", callback_data="social_back_to_main"))
         bot.send_message(user_id, t["social_choose_platform"], reply_markup=markup, parse_mode="Markdown")
 
-    def show_social_categories(user_id, platform_id, lang):
-        """عرض تصنيفات الخدمات لمنصة معينة"""
+    def show_social_services_direct(user_id, platform_id, lang):
         t = T[lang]
         organized = get_organized_services()
-        if not organized or platform_id not in organized:
-            bot.send_message(user_id, "⚠️ لا توجد خدمات لهذه المنصة.")
-            return
-        categories = organized[platform_id]['subcategories'].keys()
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        for cat in categories:
-            markup.add(types.InlineKeyboardButton(f"📌 {cat}", callback_data=f"social_category_{platform_id}_{cat}"))
-        markup.add(types.InlineKeyboardButton("🔙 رجوع", callback_data="social_back_to_platforms"))
-        bot.send_message(user_id, f"📱 *منصة: {platform_id.capitalize()}*\nاختر نوع الخدمة:", reply_markup=markup, parse_mode="Markdown")
-
-    def show_social_services(user_id, platform_id, category, lang):
-        """عرض الخدمات داخل تصنيف معين"""
-        t = T[lang]
-        organized = get_organized_services()
-        services = get_services_by_platform_and_category(organized, platform_id, category)
+        services = get_all_services_by_platform(organized, platform_id)
         if not services:
-            bot.send_message(user_id, "⚠️ لا توجد خدمات في هذا التصنيف.")
+            bot.send_message(user_id, t["social_no_services_platform"])
             return
-        # تخزين الخدمات في الحالة المؤقتة
         if user_id not in user_social_state:
             user_social_state[user_id] = {}
         user_social_state[user_id]['services_list'] = services
         user_social_state[user_id]['platform'] = platform_id
-        user_social_state[user_id]['category'] = category
         user_social_state[user_id]['step'] = 'service'
         user_social_state[user_id]['services_page'] = 0
         _show_services_page(user_id, lang, 0)
 
     def _show_services_page(user_id, lang, page):
-        """عرض صفحة من قائمة الخدمات"""
         t = T[lang]
         data = user_social_state.get(user_id, {})
         services = data.get('services_list', [])
         if not services:
-            bot.send_message(user_id, "⚠️ لا توجد خدمات.")
+            bot.send_message(user_id, t["social_no_services_category"])
             return
         total_pages = (len(services) - 1) // SERVICES_PER_PAGE + 1
         start = page * SERVICES_PER_PAGE
@@ -288,6 +270,7 @@ def register_all_handlers(bot):
         page_services = services[start:end]
         markup = types.InlineKeyboardMarkup(row_width=1)
         for svc in page_services:
+            # عرض اسم الخدمة والسعر الأصلي
             btn_text = f"{svc['name']} - {svc['rate']} USD"
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"social_service_{svc['service']}"))
         # أزرار التنقل
@@ -298,9 +281,10 @@ def register_all_handlers(bot):
             nav_buttons.append(types.InlineKeyboardButton("التالي ▶️", callback_data=f"social_services_page_{page+1}"))
         if nav_buttons:
             markup.row(*nav_buttons)
-        markup.add(types.InlineKeyboardButton("🔙 رجوع إلى التصنيفات", callback_data=f"social_back_to_categories_{data.get('platform', '')}_{data.get('category', '')}"))
+        # زر رجوع وإلغاء
+        markup.add(types.InlineKeyboardButton("🔙 رجوع للمنصات", callback_data="social_back_to_platforms"))
         markup.add(types.InlineKeyboardButton("🏠 إلغاء الكل", callback_data="social_cancel_all"))
-        msg = f"📱 *منصة: {data.get('platform', '').capitalize()}*\n📌 *تصنيف: {data.get('category', '')}*\nاختر الخدمة المطلوبة:"
+        msg = f"📢 *منصة: {data.get('platform', '').capitalize()}*\n📋 اختر الخدمة المطلوبة:"
         bot.send_message(user_id, msg, reply_markup=markup, parse_mode="Markdown")
         user_social_state[user_id]['services_page'] = page
 
@@ -350,7 +334,7 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # التعامل مع حالة المستخدم في خدمات السوشل ميديا (نظام الجلسات الجديد)
+        # التعامل مع حالة المستخدم في خدمات السوشل ميديا (نظام الجلسات)
         if user_id in user_social_state:
             current_step = user_social_state[user_id].get('step')
             
@@ -378,7 +362,13 @@ def register_all_handlers(bot):
                     original_price = float(service['rate'])
                     total_price = calculate_price_with_profit(original_price * quantity)
                     user_social_state[user_id]['total_price'] = total_price
-                    summary = f"📋 *ملخص الطلب*\n━━━━━━━━━━━━\n📱 المنصة: {user_social_state[user_id].get('platform', '').capitalize()}\n📌 الخدمة: {service['name']}\n🔗 الرابط: {user_social_state[user_id]['link']}\n🔢 الكمية: {quantity}\n💰 السعر الإجمالي: {total_price} درهم (شامل الربح)\n━━━━━━━━━━━━\n✅ لتأكيد الطلب: /confirm_social\n❌ للإلغاء: /cancel_social"
+                    summary = t["social_order_summary"].format(
+                        user_social_state[user_id].get('platform', '').capitalize(),
+                        service['name'],
+                        user_social_state[user_id]['link'],
+                        quantity,
+                        total_price
+                    )
                     bot.send_message(user_id, summary, parse_mode="Markdown")
                     user_social_state[user_id]['step'] = 'awaiting_confirmation'
                     conn.close()
@@ -407,11 +397,10 @@ def register_all_handlers(bot):
 
         text = message.text
 
-        # قائمة الخدمات (services) - تم تعديلها لتظهر زر السوشل ميديا
+        # قائمة الخدمات
         if text == t["services"]:
             show_services_menu(message, lang)
         elif text == t["social_media"]:
-            # عرض خدمات السوشل ميديا (المنصات)
             show_social_platforms(user_id, lang)
             conn.close()
             return
@@ -465,7 +454,7 @@ def register_all_handlers(bot):
             bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
         conn.close()
 
-    # ========== معالجات كول باك السوشل ميديا ==========
+    # ========== معالجات كول باك السوشل ميديا (بدون تصنيفات) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('social_platform_'))
     def social_platform_selected(call):
         user_id = call.from_user.id
@@ -473,24 +462,9 @@ def register_all_handlers(bot):
         lang = get_lang(user_id)
         if user_id in user_social_state:
             del user_social_state[user_id]
-        user_social_state[user_id] = {'platform': platform_id, 'step': 'categories'}
+        user_social_state[user_id] = {'platform': platform_id, 'step': 'service'}
         bot.delete_message(call.message.chat.id, call.message.message_id)
-        show_social_categories(user_id, platform_id, lang)
-        bot.answer_callback_query(call.id)
-
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_category_'))
-    def social_category_selected(call):
-        parts = call.data.split('_')
-        platform_id = parts[2]
-        category = '_'.join(parts[3:])
-        user_id = call.from_user.id
-        lang = get_lang(user_id)
-        if user_id not in user_social_state:
-            user_social_state[user_id] = {}
-        user_social_state[user_id]['category'] = category
-        user_social_state[user_id]['step'] = 'service'
-        bot.delete_message(call.message.chat.id, call.message.message_id)
-        show_social_services(user_id, platform_id, category, lang)
+        show_social_services_direct(user_id, platform_id, lang)
         bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('social_service_'))
@@ -502,7 +476,7 @@ def register_all_handlers(bot):
         services = user_social_state.get(user_id, {}).get('services_list', [])
         service = next((s for s in services if s['service'] == service_id), None)
         if not service:
-            bot.answer_callback_query(call.id, "الخدمة غير موجودة", show_alert=True)
+            bot.answer_callback_query(call.id, t["social_service_selected_error"], show_alert=True)
             return
         user_social_state[user_id]['selected_service'] = service
         user_social_state[user_id]['step'] = 'awaiting_link'
@@ -517,17 +491,6 @@ def register_all_handlers(bot):
         lang = get_lang(user_id)
         bot.delete_message(call.message.chat.id, call.message.message_id)
         _show_services_page(user_id, lang, page)
-        bot.answer_callback_query(call.id)
-
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_back_to_categories_'))
-    def social_back_to_categories(call):
-        parts = call.data.split('_')
-        platform_id = parts[4]
-        category = '_'.join(parts[5:]) if len(parts) > 5 else ''
-        user_id = call.from_user.id
-        lang = get_lang(user_id)
-        bot.delete_message(call.message.chat.id, call.message.message_id)
-        show_social_categories(user_id, platform_id, lang)
         bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda call: call.data == "social_back_to_platforms")
@@ -557,8 +520,6 @@ def register_all_handlers(bot):
         if user_id in user_social_state:
             del user_social_state[user_id]
         bot.delete_message(call.message.chat.id, call.message.message_id)
-        # العودة إلى القائمة الرئيسية (نحتاج إلى كائن message)
-        # نستخدم call.message كقاعدة
         show_main_menu(call.message, lang)
         bot.answer_callback_query(call.id)
 
@@ -585,7 +546,7 @@ def register_all_handlers(bot):
         if result and 'order' in result:
             api_order_id = result['order']
             save_social_order(user_id, service['service'], link, quantity, total_price, api_order_id)
-            bot.send_message(user_id, f"✅ *تم إرسال طلبك بنجاح!*\n🆔 رقم الطلب في API: `{api_order_id}`\nيمكنك متابعة الحالة عبر /social_status {api_order_id}", parse_mode="Markdown")
+            bot.send_message(user_id, t["social_order_success"].format(api_order_id), parse_mode="Markdown")
             add_purchase_record(user_id, f"🌐 {service['name']} ({quantity}) - {total_price} DH - طلب API: {api_order_id}")
         else:
             error_msg = result.get('error', 'خطأ غير معروف') if result else 'فشل الاتصال بالـ API'
