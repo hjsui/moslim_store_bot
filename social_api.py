@@ -82,12 +82,11 @@ def calculate_price_with_profit(original_price):
     """
     return round(original_price * (1 + SOCIAL_PROFIT_PERCENT / 100), 2)
 
-
-# ========== دوال تنظيم الخدمات حسب المنصة والتصنيف (للبوت فقط) ==========
+# ========== دوال تنظيم الخدمات حسب المنصة (للبوت) ==========
 
 def organize_services_by_platform(services_list):
     """
-    يأخذ قائمة الخدمات من الـ API ويعيدها منظمة حسب المنصة ثم حسب نوع الخدمة.
+    يأخذ قائمة الخدمات من الـ API ويعيدها منظمة حسب المنصة.
     يتم استخراج المنصة من اسم الخدمة باستخدام كلمات مفتاحية شائعة.
     """
     # قائمة المنصات والكلمات المفتاحية المرتبطة بها
@@ -116,38 +115,9 @@ def organize_services_by_platform(services_list):
                 if platform not in organized:
                     organized[platform] = {
                         'name': platform,
-                        'services': [],
-                        'subcategories': {}
+                        'services': []
                     }
                 organized[platform]['services'].append(service)
-                
-                # تحديد نوع الخدمة (مشاهدات، إعجابات، متابعين، ...)
-                service_type = 'أخرى'
-                if 'view' in service_name:
-                    service_type = 'مشاهدات'
-                elif 'like' in service_name or 'heart' in service_name:
-                    service_type = 'إعجابات'
-                elif 'follower' in service_name or 'subscriber' in service_name:
-                    service_type = 'متابعين'
-                elif 'comment' in service_name:
-                    service_type = 'تعليقات'
-                elif 'share' in service_name or 'retweet' in service_name:
-                    service_type = 'مشاركات'
-                elif 'member' in service_name:
-                    service_type = 'أعضاء'
-                elif 'live' in service_name:
-                    service_type = 'مشاهدة مباشرة'
-                elif 'reel' in service_name or 'story' in service_name:
-                    service_type = 'رييل / ستوري'
-                elif 'game' in service_name or 'capcut' in service_name or 'chatgpt' in service_name:
-                    service_type = 'ألعاب واشتراكات'
-                else:
-                    service_type = 'خدمات متنوعة'
-                
-                if service_type not in organized[platform]['subcategories']:
-                    organized[platform]['subcategories'][service_type] = []
-                organized[platform]['subcategories'][service_type].append(service)
-                
                 assigned = True
                 break
         
@@ -156,13 +126,9 @@ def organize_services_by_platform(services_list):
             if 'other' not in organized:
                 organized['other'] = {
                     'name': 'أخرى',
-                    'services': [],
-                    'subcategories': {}
+                    'services': []
                 }
             organized['other']['services'].append(service)
-            if 'أخرى' not in organized['other']['subcategories']:
-                organized['other']['subcategories']['أخرى'] = []
-            organized['other']['subcategories']['أخرى'].append(service)
     
     return organized
 
@@ -175,17 +141,14 @@ def get_platforms_list(organized_services):
         platforms.append({
             'id': key,
             'name': data['name'],
-            'service_count': len(data['services']),
-            'categories': list(data['subcategories'].keys())
+            'service_count': len(data['services'])
         })
     return platforms
 
-def get_services_by_platform_and_category(organized_services, platform_id, category_name):
+def get_all_services_by_platform(organized_services, platform_id):
     """
-    إرجاع قائمة الخدمات لمنصة معينة وتصنيف معين
+    إرجاع قائمة بجميع خدمات منصة معينة (بدون تقسيم إلى تصنيفات)
     """
     if platform_id in organized_services:
-        platform_data = organized_services[platform_id]
-        if category_name in platform_data['subcategories']:
-            return platform_data['subcategories'][category_name]
+        return organized_services[platform_id]['services']
     return []
