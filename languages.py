@@ -1,4 +1,5 @@
 # languages.py
+# قاموس الترجمة الكامل للمتجر
 
 T = {
     "ar": {
@@ -49,16 +50,16 @@ T = {
         "welcome_after_lang": "🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨\n⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡\n📢 *آراء العملاء:* [قناتنا مليئة بالإثباتات]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *اضغط /start لتفعيل المتجر* 🔓",
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
         "inline_proofs_btn": "📢 قناة الإثباتات",
-        # إضافة مفاتيح جديدة لخدمات السوشل ميديا
-        "social_media": "🌐 خدمات سوشل ميديا",
-        "social_welcome": "🌟 *مرحباً بك في قسم خدمات التواصل الاجتماعي!*\nاختر الخدمة التي تريدها من القائمة أدناه:",
-        "social_choose_service": "🔍 *اختر الخدمة:*",
-        "social_send_link": "🔗 *أرسل رابط المنشور أو الصفحة التي تريد تنفيذ الخدمة عليها:*",
-        "social_send_quantity": "🔢 *أرسل الكمية المطلوبة (عدد متابعين/إعجابات/مشاهدات...):*",
-        "social_price_calc": "💰 *سعر الخدمة:* {:.2f} درهم (شامل الربح)\n✅ لتأكيد الطلب اضغط /confirm_social",
-        "social_order_success": "✅ *تم طلب الخدمة بنجاح!*\n📋 رقم الطلب في النظام: `{}`\n📊 الحالة: جاري التنفيذ\n⏳ قد يستغرق بعض الوقت، يمكنك متابعة الحالة عبر أمر /social_status",
-        "social_order_failed": "❌ *فشل طلب الخدمة*\nالرجاء المحاولة لاحقاً أو التواصل مع الدعم.",
-        "social_status": "📊 *حالة طلبك:*\nالخدمة: {}\nالرابط: {}\nالكمية: {}\nالحالة: {}\nالتاريخ: {}"
+        # مفاتيح جديدة لخدمات السوشل ميديا
+        "social_media": "📱 خدمات سوشل ميديا 🌐",
+        "social_choose_service": "🌐 *اختر الخدمة المطلوبة:*",
+        "social_send_link": "🔗 *أرسل رابط الصفحة أو الملف الشخصي*\nمثال: https://instagram.com/username",
+        "social_send_quantity": "🔢 *أرسل الكمية المطلوبة* (رقم فقط):",
+        "social_price_calc": "💰 *السعر الإجمالي: {} درهم*\n✅ لتأكيد الطلب أكتب /confirm_social\n❌ لإلغاء الطلب أكتب /cancel_social",
+        "social_order_success": "✅ *تم إرسال الطلب بنجاح!*\n🆔 رقم طلب API: `{}`\nيمكنك متابعة الحالة لاحقاً عبر الأمر /social_status <id>",
+        "social_order_failed": "❌ *فشل إرسال الطلب*، يرجى المحاولة لاحقاً أو التواصل مع الدعم.",
+        "social_status_invalid": "⚠️ معرف الطلب غير صالح. استخدم /social_status <api_order_id>",
+        "social_loading": "🔄 جاري تحميل الخدمات..."
     },
     "en": {
         "shop_now": "🛍️ Shop Now",
@@ -108,14 +109,15 @@ T = {
         "welcome_after_lang": "🛍️ *MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *Digital services - Instant top-up - Subscriptions* ✨\n⚡ *Speed - Trust - Unbeatable prices* ⚡\n📢 *Customer reviews:* [Our channel is full of proofs]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *Press /start to activate the store* 🔓",
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
-        "social_media": "🌐 Social Media Services",
-        "social_welcome": "🌟 *Welcome to Social Media Services section!*\nChoose a service from the list below:",
-        "social_choose_service": "🔍 *Choose the service:*",
-        "social_send_link": "🔗 *Send the link of the post or page you want the service on:*",
-        "social_send_quantity": "🔢 *Send the quantity (followers/likes/views...):*",
-        "social_price_calc": "💰 *Service price:* {:.2f} MAD (including profit)\n✅ To confirm the order, type /confirm_social",
-        "social_order_success": "✅ *Order placed successfully!*\n📋 API order ID: `{}`\n📊 Status: Processing\n⏳ It may take some time. Use /social_status to check.",
-        "social_order_failed": "❌ *Order failed*\nPlease try again later or contact support.",
-        "social_status": "📊 *Your order status:*\nService: {}\nLink: {}\nQuantity: {}\nStatus: {}\nDate: {}"
+        # مفاتيح جديدة لخدمات السوشل ميديا (إنجليزية)
+        "social_media": "📱 Social Media Services 🌐",
+        "social_choose_service": "🌐 *Choose a service:*",
+        "social_send_link": "🔗 *Send your profile/page link*\nExample: https://instagram.com/username",
+        "social_send_quantity": "🔢 *Send quantity (number only):*",
+        "social_price_calc": "💰 *Total price: {} MAD*\n✅ Confirm order with /confirm_social\n❌ Cancel with /cancel_social",
+        "social_order_success": "✅ *Order placed successfully!*\n🆔 API Order ID: `{}`\nCheck status later using /social_status <id>",
+        "social_order_failed": "❌ *Order failed*. Try again later or contact support.",
+        "social_status_invalid": "⚠️ Invalid order ID. Use /social_status <api_order_id>",
+        "social_loading": "🔄 Loading services..."
     }
 }
