@@ -1,8 +1,9 @@
 # languages.py
-# قاموس الترجمة الكامل للمتجر
+# قاموس الترجمة الكامل للمتجر (مع إضافات السوشل ميديا)
 
 T = {
     "ar": {
+        # القائمة الرئيسية والأزرار الأساسية
         "shop_now": "🛍️ تسوق الآن",
         "services": "🛒 الخدمات",
         "add_balance": "💰 إضافة رصيد",
@@ -19,6 +20,8 @@ T = {
         "apps_service": "📱 اشتراكات التطبيقات",
         "ff_topup": "💎 شحن جواهر فري فاير",
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
+        
+        # رسائل الاختيارات العامة
         "choose_product": "🔍 *اختر نوع المنتج:*",
         "choose_validity": "📅 *اختر المدة:*",
         "choose_app": "🔍 *اختر التطبيق الذي تريده:*",
@@ -34,6 +37,8 @@ T = {
         "choose_section": "🛒 *أقسام المتجر:*\n━━━━━━━━━━━━\nاختر القسم المناسب:",
         "other_games_text": "🎮 *شحن ألعاب أخرى*\n━━━━━━━━━━━━\n📌 *الألعاب المتوفرة:*\n• ببجي موبايل (UC)\n• كول أوف ديوتي (CP)\n• فري فاير (DA)\n• جينشين إمباكت\n\n📞 *للطلب:* تواصل مع الدعم",
         "ff_packages_title": "💎 *باقات شحن جواهر فري فاير*\n━━━━━━━━━━━━\n✨ *باقات حصرية بأفضل الأسعار*\n⚡ *توصيل فوري خلال دقائق*\n━━━━━━━━━━━━\n*اختر الباقة المناسبة:*",
+        
+        # رسائل التحقق والتفعيل
         "ask_password": "⚠️ *مـتـجـــر مـسـلـــم* 🛍️\nأدخل كلمة المرور لتفعيل المتجر:",
         "wrong_password": "❌ *كلمة مرور خاطئة!* ❌",
         "verified_success": "✅ *تم التفعيل بنجاح!* ✅\n🎉 مرحباً بك في متجر مسلم",
@@ -50,7 +55,8 @@ T = {
         "welcome_after_lang": "🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨\n⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡\n📢 *آراء العملاء:* [قناتنا مليئة بالإثباتات]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *اضغط /start لتفعيل المتجر* 🔓",
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
         "inline_proofs_btn": "📢 قناة الإثباتات",
-        # مفاتيح جديدة لخدمات السوشل ميديا
+        
+        # مفاتيح السوشل ميديا القديمة (تستخدم في بعض الأماكن)
         "social_media": "📱 خدمات سوشل ميديا 🌐",
         "social_choose_service": "🌐 *اختر الخدمة المطلوبة:*",
         "social_send_link": "🔗 *أرسل رابط الصفحة أو الملف الشخصي*\nمثال: https://instagram.com/username",
@@ -59,9 +65,21 @@ T = {
         "social_order_success": "✅ *تم إرسال الطلب بنجاح!*\n🆔 رقم طلب API: `{}`\nيمكنك متابعة الحالة لاحقاً عبر الأمر /social_status <id>",
         "social_order_failed": "❌ *فشل إرسال الطلب*، يرجى المحاولة لاحقاً أو التواصل مع الدعم.",
         "social_status_invalid": "⚠️ معرف الطلب غير صالح. استخدم /social_status <api_order_id>",
-        "social_loading": "🔄 جاري تحميل الخدمات..."
+        "social_loading": "🔄 جاري تحميل الخدمات...",
+        
+        # مفاتيح السوشل ميديا الجديدة (المطلوبة للنظام الجديد)
+        "social_choose_platform": "🌐 *اختر المنصة المطلوبة:*",
+        "social_select_service": "🔍 *اختر الخدمة المناسبة:*",
+        "social_no_services": "⚠️ لا توجد خدمات متاحة حالياً.",
+        "social_no_services_platform": "⚠️ لا توجد خدمات لهذه المنصة.",
+        "social_no_services_category": "⚠️ لا توجد خدمات في هذا التصنيف.",
+        "social_service_selected_error": "الخدمة غير موجودة",
+        "social_cancel_all": "❌ تم إلغاء جميع العمليات. يمكنك البدء من جديد.",
+        "social_order_summary": "📋 *ملخص الطلب*\n━━━━━━━━━━━━\n📱 المنصة: {}\n📌 الخدمة: {}\n🔗 الرابط: {}\n🔢 الكمية: {}\n💰 السعر الإجمالي: {} درهم (شامل الربح)\n━━━━━━━━━━━━\n✅ لتأكيد الطلب: /confirm_social\n❌ للإلغاء: /cancel_social"
     },
+    
     "en": {
+        # Main menu and basic buttons
         "shop_now": "🛍️ Shop Now",
         "services": "🛒 Services",
         "add_balance": "💰 Add Balance",
@@ -78,6 +96,8 @@ T = {
         "apps_service": "📱 App Subscriptions",
         "ff_topup": "💎 Free Fire Diamonds Top-up",
         "keys_service": "🔑 Create Hacker Keys",
+        
+        # General choice messages
         "choose_product": "🔍 *Choose product type:*",
         "choose_validity": "📅 *Choose duration:*",
         "choose_app": "🔍 *Choose the app you want:*",
@@ -93,6 +113,8 @@ T = {
         "choose_section": "🛒 *Store Sections:*\n━━━━━━━━━━━━\nChoose the appropriate section:",
         "other_games_text": "🎮 *Other Games Top-up*\n━━━━━━━━━━━━\n📌 *Available games:*\n• PUBG Mobile (UC)\n• Call of Duty (CP)\n• Free Fire (DA)\n• Genshin Impact\n\n📞 *To order:* Contact support",
         "ff_packages_title": "💎 *Free Fire Diamonds Packages*\n━━━━━━━━━━━━\n✨ *Exclusive packages at best prices*\n⚡ *Instant delivery in minutes*\n━━━━━━━━━━━━\n*Choose your package:*",
+        
+        # Verification and activation messages
         "ask_password": "⚠️ *MOSLIM STORE* 🛍️\nEnter password to activate the store:",
         "wrong_password": "❌ *Wrong password!* ❌",
         "verified_success": "✅ *Activated successfully!* ✅\n🎉 Welcome to Moslim Store",
@@ -109,7 +131,8 @@ T = {
         "welcome_after_lang": "🛍️ *MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *Digital services - Instant top-up - Subscriptions* ✨\n⚡ *Speed - Trust - Unbeatable prices* ⚡\n📢 *Customer reviews:* [Our channel is full of proofs]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *Press /start to activate the store* 🔓",
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
-        # مفاتيح جديدة لخدمات السوشل ميديا (إنجليزية)
+        
+        # Social media old keys (still used)
         "social_media": "📱 Social Media Services 🌐",
         "social_choose_service": "🌐 *Choose a service:*",
         "social_send_link": "🔗 *Send your profile/page link*\nExample: https://instagram.com/username",
@@ -118,6 +141,16 @@ T = {
         "social_order_success": "✅ *Order placed successfully!*\n🆔 API Order ID: `{}`\nCheck status later using /social_status <id>",
         "social_order_failed": "❌ *Order failed*. Try again later or contact support.",
         "social_status_invalid": "⚠️ Invalid order ID. Use /social_status <api_order_id>",
-        "social_loading": "🔄 Loading services..."
+        "social_loading": "🔄 Loading services...",
+        
+        # New social media keys (for the new system)
+        "social_choose_platform": "🌐 *Choose the platform:*",
+        "social_select_service": "🔍 *Select the appropriate service:*",
+        "social_no_services": "⚠️ No services available at the moment.",
+        "social_no_services_platform": "⚠️ No services for this platform.",
+        "social_no_services_category": "⚠️ No services in this category.",
+        "social_service_selected_error": "Service not found",
+        "social_cancel_all": "❌ All operations canceled. You can start over.",
+        "social_order_summary": "📋 *Order Summary*\n━━━━━━━━━━━━\n📱 Platform: {}\n📌 Service: {}\n🔗 Link: {}\n🔢 Quantity: {}\n💰 Total price: {} MAD (including profit)\n━━━━━━━━━━━━\n✅ To confirm order: /confirm_social\n❌ To cancel: /cancel_social"
     }
 }
