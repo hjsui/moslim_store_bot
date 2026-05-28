@@ -1,5 +1,6 @@
 # social_api.py
 # هذا الملف مسؤول عن التواصل مع API موقع xfollowr لخدمات السوشل ميديا
+
 import requests
 from config import SOCIAL_API_URL, SOCIAL_API_KEY, SOCIAL_PROFIT_PERCENT
 
@@ -89,19 +90,19 @@ def organize_services_by_platform(services_list):
     يأخذ قائمة الخدمات من الـ API ويعيدها منظمة حسب المنصة.
     يتم استخراج المنصة من اسم الخدمة باستخدام كلمات مفتاحية شائعة.
     """
-    # قائمة المنصات والكلمات المفتاحية المرتبطة بها
+    # قائمة المنصات والكلمات المفتاحية المرتبطة بها مع الأيقونات
     platforms = {
-        'facebook': ['facebook', 'fb', 'meta', 'page', 'post', 'video', 'reel', 'like', 'follow', 'share'],
-        'instagram': ['instagram', 'insta', 'ig', 'reel', 'story', 'igtv', 'followers', 'likes', 'views', 'comments'],
-        'tiktok': ['tiktok', 'tk', 'followers', 'likes', 'views', 'hearts'],
-        'telegram': ['telegram', 'tg', 'members', 'views', 'channel', 'group'],
-        'youtube': ['youtube', 'yt', 'views', 'subscribers', 'likes', 'comments', 'shares'],
-        'twitter': ['twitter', 'x', 'tweet', 'retweet', 'followers', 'likes'],
-        'linkedin': ['linkedin', 'in', 'connections', 'followers', 'views'],
-        'snapchat': ['snapchat', 'snap', 'views', 'score', 'friends'],
-        'whatsapp': ['whatsapp', 'wa', 'group', 'members', 'status'],
-        'kwai': ['kwai', 'followers', 'views', 'likes'],
-        'other_games': ['pubg', 'freefire', 'cod', 'genshin', 'capcut', 'chatgpt', 'kick', 'game']
+        'facebook': {'keywords': ['facebook', 'fb', 'meta', 'page', 'post', 'video', 'reel', 'like', 'follow', 'share'], 'icon': '📘'},
+        'instagram': {'keywords': ['instagram', 'insta', 'ig', 'reel', 'story', 'igtv', 'followers', 'likes', 'views', 'comments'], 'icon': '📷'},
+        'tiktok': {'keywords': ['tiktok', 'tk', 'followers', 'likes', 'views', 'hearts'], 'icon': '🎵'},
+        'telegram': {'keywords': ['telegram', 'tg', 'members', 'views', 'channel', 'group'], 'icon': '✈️'},
+        'youtube': {'keywords': ['youtube', 'yt', 'views', 'subscribers', 'likes', 'comments', 'shares'], 'icon': '▶️'},
+        'twitter': {'keywords': ['twitter', 'x', 'tweet', 'retweet', 'followers', 'likes'], 'icon': '🐦'},
+        'linkedin': {'keywords': ['linkedin', 'in', 'connections', 'followers', 'views'], 'icon': '🔗'},
+        'snapchat': {'keywords': ['snapchat', 'snap', 'views', 'score', 'friends'], 'icon': '👻'},
+        'whatsapp': {'keywords': ['whatsapp', 'wa', 'group', 'members', 'status'], 'icon': '💬'},
+        'kwai': {'keywords': ['kwai', 'followers', 'views', 'likes'], 'icon': '🎬'},
+        'other_games': {'keywords': ['pubg', 'freefire', 'cod', 'genshin', 'capcut', 'chatgpt', 'kick', 'game'], 'icon': '🎮'}
     }
     
     organized = {}  # الهيكل النهائي
@@ -110,14 +111,16 @@ def organize_services_by_platform(services_list):
         service_name = service.get('name', '').lower()
         assigned = False
         
-        for platform, keywords in platforms.items():
+        for platform_id, data in platforms.items():
+            keywords = data['keywords']
             if any(keyword in service_name for keyword in keywords):
-                if platform not in organized:
-                    organized[platform] = {
-                        'name': platform,
-                        'services': []
+                if platform_id not in organized:
+                    organized[platform_id] = {
+                        'name': platform_id,
+                        'services': [],
+                        'icon': data['icon']
                     }
-                organized[platform]['services'].append(service)
+                organized[platform_id]['services'].append(service)
                 assigned = True
                 break
         
@@ -126,7 +129,8 @@ def organize_services_by_platform(services_list):
             if 'other' not in organized:
                 organized['other'] = {
                     'name': 'أخرى',
-                    'services': []
+                    'services': [],
+                    'icon': '📁'
                 }
             organized['other']['services'].append(service)
     
@@ -134,14 +138,15 @@ def organize_services_by_platform(services_list):
 
 def get_platforms_list(organized_services):
     """
-    إرجاع قائمة المنصات المتاحة مع عدد الخدمات لكل منصة
+    إرجاع قائمة المنصات المتاحة مع عدد الخدمات والأيقونة لكل منصة
     """
     platforms = []
     for key, data in organized_services.items():
         platforms.append({
             'id': key,
             'name': data['name'],
-            'service_count': len(data['services'])
+            'service_count': len(data['services']),
+            'icon': data.get('icon', '📢')
         })
     return platforms
 
