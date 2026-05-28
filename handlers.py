@@ -1,6 +1,6 @@
 # handlers.py
 # جميع معالجات البوت (Callbacks, Message handlers, Commands)
-# تم تعديل خدمات السوشل ميديا: إزالة التصنيفات، عرض خدمات المنصة مباشرة، أيقونة 📢
+# تم تعديل خدمات السوشل ميديا: إزالة التصنيفات، عرض خدمات المنصة مباشرة، أيقونة 📢، ربط طلبات السوشل ميديا بنظام الدفع
 
 import telebot
 from telebot import types
@@ -205,6 +205,32 @@ def register_all_handlers(bot):
                 else:
                     bot.send_message(user_id, t["app_no_stock"], parse_mode="Markdown")
                     update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
+            elif product_type == 'social':
+                # معالجة طلب السوشل ميديا بعد قبول الدفع
+                try:
+                    # product_id تحتوي على "social|service_id|link|quantity"
+                    parts = product_id.split('|')
+                    if len(parts) == 4:
+                        _, service_id_str, link, quantity_str = parts
+                        service_id = int(service_id_str)
+                        quantity = int(quantity_str)
+                        result = add_order(service_id, link, quantity)
+                        if result and 'order' in result:
+                            api_order_id = result['order']
+                            bot.send_message(user_id, f"✅ *تم تنفيذ طلبك بنجاح!*\n🆔 رقم طلب API: `{api_order_id}`\nيمكنك متابعة الحالة عبر /social_status {api_order_id}", parse_mode="Markdown")
+                            add_purchase_record(user_id, f"🌐 طلب سوشل ميديا (API ID: {api_order_id}) - {amount} DH")
+                            update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
+                        else:
+                            error_msg = result.get('error', 'خطأ غير معروف') if result else 'فشل الاتصال بالـ API'
+                            bot.send_message(user_id, f"❌ *فشل تنفيذ الطلب*\nالسبب: {error_msg}\nتم إبلاغ المدير.", parse_mode="Markdown")
+                            update_order_status(order_id, 'failed', admin_action='api_error')
+                    else:
+                        bot.send_message(user_id, "❌ بيانات الطلب غير صالحة. تم إبلاغ المدير.")
+                        update_order_status(order_id, 'failed', admin_action='invalid_data')
+                except Exception as e:
+                    print(f"خطأ في معالجة طلب السوشل ميديا: {e}")
+                    bot.send_message(user_id, "❌ حدث خطأ داخلي. تم إبلاغ المدير.")
+                    update_order_status(order_id, 'failed', admin_action='internal_error')
         else:
             # رفض الطلب
             if product_type == 'ff':
@@ -212,9 +238,13 @@ def register_all_handlers(bot):
             elif product_type == 'key':
                 parts = product_id.split('_')
                 product_name = f"مفتاح DRIP CLIENT - {parts[1] if len(parts)>1 else product_id} يوم"
-            else:
+            elif product_type == 'app':
                 app_data = apps_inventory.get(product_id, {})
                 product_name = app_data.get("name_ar", "تطبيق") if lang == 'ar' else app_data.get("name_en", "App")
+            elif product_type == 'social':
+                product_name = "خدمة سوشل ميديا"
+            else:
+                product_name = "المنتج"
             reject_msg = t["order_rejected"].format(product_name)
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton("🔄 تغيير طريقة الدفع", callback_data=f"change_payment_{order_id}"))
@@ -236,8 +266,31 @@ def register_all_handlers(bot):
         platforms = get_platforms_list(organized)
         markup = types.InlineKeyboardMarkup(row_width=2)
         for platform in platforms:
-            # استخدام أيقونة 📢 بدلاً من 📱 (يمكن تغييرها لاحقاً)
-            btn_text = f"📢 {platform['name'].capitalize()} ({platform['service_count']})"
+            # استخدام أيقونة منظمة حسب المنصة (يمكن تحسينها لاحقاً)
+            icon = "📢"
+            if platform['id'] == 'facebook':
+                icon = "📘"
+            elif platform['id'] == 'instagram':
+                icon = "📷"
+            elif platform['id'] == 'tiktok':
+                icon = "🎵"
+            elif platform['id'] == 'telegram':
+                icon = "✈️"
+            elif platform['id'] == 'youtube':
+                icon = "▶️"
+            elif platform['id'] == 'twitter':
+                icon = "🐦"
+            elif platform['id'] == 'linkedin':
+                icon = "🔗"
+            elif platform['id'] == 'snapchat':
+                icon = "👻"
+            elif platform['id'] == 'whatsapp':
+                icon = "💬"
+            elif platform['id'] == 'kwai':
+                icon = "🎬"
+            elif platform['id'] == 'other_games':
+                icon = "🎮"
+            btn_text = f"{icon} {platform['name'].capitalize()} ({platform['service_count']})"
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"social_platform_{platform['id']}"))
         markup.add(types.InlineKeyboardButton("🔙 العودة", callback_data="social_back_to_main"))
         bot.send_message(user_id, t["social_choose_platform"], reply_markup=markup, parse_mode="Markdown")
@@ -481,7 +534,30 @@ def register_all_handlers(bot):
         user_social_state[user_id]['selected_service'] = service
         user_social_state[user_id]['step'] = 'awaiting_link'
         bot.delete_message(call.message.chat.id, call.message.message_id)
-        bot.send_message(user_id, t["social_send_link"])
+        # إرسال رسالة إرشادية لعنوان الرابط حسب المنصة
+        platform = user_social_state[user_id].get('platform', '')
+        link_example = "https://example.com/post"
+        if platform == 'facebook':
+            link_example = "https://www.facebook.com/username/posts/123456"
+        elif platform == 'instagram':
+            link_example = "https://www.instagram.com/p/CxYzAbc123/"
+        elif platform == 'tiktok':
+            link_example = "https://www.tiktok.com/@username/video/123456789"
+        elif platform == 'telegram':
+            link_example = "https://t.me/username/123"
+        elif platform == 'youtube':
+            link_example = "https://www.youtube.com/watch?v=abc123"
+        elif platform == 'twitter':
+            link_example = "https://twitter.com/username/status/123456"
+        elif platform == 'linkedin':
+            link_example = "https://www.linkedin.com/feed/update/123456"
+        elif platform == 'snapchat':
+            link_example = "رابط المستخدم أو المنشور"
+        elif platform == 'whatsapp':
+            link_example = "https://chat.whatsapp.com/..."
+        elif platform == 'kwai':
+            link_example = "https://www.kwai.com/video/123456"
+        bot.send_message(user_id, f"{t['social_send_link']}\n\n📌 *مثال:* `{link_example}`", parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('social_services_page_'))
@@ -523,35 +599,43 @@ def register_all_handlers(bot):
         show_main_menu(call.message, lang)
         bot.answer_callback_query(call.id)
 
-    # ========== أوامر السوشل ميديا ==========
+    # ========== أوامر السوشل ميديا (معدلة لاستخدام نظام الدفع) ==========
     @bot.message_handler(commands=['confirm_social'])
     def confirm_social_order(message):
         user_id = message.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
+
+        # التحقق من وجود طلب نشط وبياناته صحيحة
         if user_id not in user_social_state or user_social_state[user_id].get('step') != 'awaiting_confirmation':
             bot.send_message(user_id, "⚠️ لا يوجد طلب قيد الانتظار للتأكيد. ابدأ باختيار خدمة من قسم السوشل ميديا.")
             return
+
         data = user_social_state[user_id]
         service = data.get('selected_service')
         link = data.get('link')
         quantity = data.get('quantity')
         total_price = data.get('total_price')
+        platform_name = data.get('platform', '').capitalize()
+
         if not all([service, link, quantity, total_price]):
             bot.send_message(user_id, "⚠️ البيانات ناقصة. يرجى إعادة اختيار الخدمة.")
             del user_social_state[user_id]
             return
-        # إرسال الطلب إلى الـ API
-        result = add_order(service['service'], link, quantity)
-        if result and 'order' in result:
-            api_order_id = result['order']
-            save_social_order(user_id, service['service'], link, quantity, total_price, api_order_id)
-            bot.send_message(user_id, t["social_order_success"].format(api_order_id), parse_mode="Markdown")
-            add_purchase_record(user_id, f"🌐 {service['name']} ({quantity}) - {total_price} DH - طلب API: {api_order_id}")
-        else:
-            error_msg = result.get('error', 'خطأ غير معروف') if result else 'فشل الاتصال بالـ API'
-            bot.send_message(user_id, f"❌ *فشل إرسال الطلب*\nالسبب: {error_msg}\nيرجى المحاولة لاحقاً.", parse_mode="Markdown")
+
+        # إنشاء طلب جديد في قاعدة البيانات (نوع social) مع تخزين بيانات API المطلوبة
+        # الصيغة: "social|service_id|link|quantity"
+        api_payload = f"social|{service['service']}|{link}|{quantity}"
+        order_id = create_order(user_id, 'social', api_payload, float(total_price))
+
+        # تنظيف الجلسة المؤقتة للمستخدم
         del user_social_state[user_id]
+
+        # إرسال رسالة تأكيد ودعوة للدفع
+        bot.send_message(user_id, f"✅ *تم إنشاء طلب رقم `{order_id}` بنجاح!*\n💰 المبلغ المطلوب: {total_price} درهم.\n📱 المنصة: {platform_name}\n📌 الخدمة: {service['name']}\n🔗 الرابط: {link}\n🔢 الكمية: {quantity}\n\nالرجاء اختيار طريقة الدفع من القائمة أدناه.", parse_mode="Markdown")
+        
+        # عرض طرق الدفع للمستخدم (نفس نظام الدفع المستخدم للمنتجات الأخرى)
+        show_payment_methods(user_id, 'social', api_payload, total_price)
 
     @bot.message_handler(commands=['cancel_social'])
     def cancel_social_order(message):
@@ -784,9 +868,13 @@ def register_all_handlers(bot):
         elif product_type == 'key':
             parts = product_id.split('_')
             product_name = f"مفتاح DRIP CLIENT - {parts[1] if len(parts)>1 else product_id} يوم"
-        else:
+        elif product_type == 'app':
             app_data = apps_inventory.get(product_id, {})
             product_name = app_data.get("name_ar", "تطبيق") if lang == 'ar' else app_data.get("name_en", "App")
+        elif product_type == 'social':
+            product_name = "خدمة سوشل ميديا"
+        else:
+            product_name = "منتج غير معروف"
         admin_msg = (f"<b>🔔 طلب دفع جديد</b>\n━━━━━━━━━━━━\n"
                      f"<b>🆔 الطلب:</b> <code>{order_id}</code>\n"
                      f"<b>👤 المستخدم:</b> @{message.from_user.username}\n"
