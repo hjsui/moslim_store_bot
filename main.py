@@ -8,7 +8,7 @@ from handlers import register_all_handlers
 # إنشاء البوت
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# تسجيل جميع المعالجات (handlers) من ملف handlers.py
+# تسجيل جميع المعالجات (handlers)
 register_all_handlers(bot)
 
 if __name__ == "__main__":
@@ -19,6 +19,7 @@ if __name__ == "__main__":
     keep_alive()
     
     # إزالة أي webhook قديم لتجنب خطأ 409 Conflict
+    print("🚀 جاري إيقاف أي اتصال سابق للبوت...")
     bot.remove_webhook()
     time.sleep(2)  # انتظار حتى يتم تطبيق إزالة الـ webhook
     
