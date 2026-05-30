@@ -17,7 +17,6 @@ T = {
         "back_to_products": "🔙 العودة للمنتجات",
         "games_services": "🎮 خدمات الألعاب",
         "ff_services": "🕹️ خدمات فري فاير",
-        "other_games": "🎮 شحن ألعاب أخرى (ملغي)",
         "apps_service": "📱 اشتراكات التطبيقات",
         "ff_topup": "💎 شحن جواهر فري فاير",
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
@@ -36,7 +35,6 @@ T = {
         "no_stock": "❌ عذراً، لا توجد مفاتيح متوفرة لهذه المدة حالياً.",
         "app_no_stock": "❌ هذا التطبيق غير متوفر حالياً. جرب تطبيقاً آخر.",
         "choose_section": "🛒 *أقسام المتجر:*\n━━━━━━━━━━━━\nاختر القسم المناسب:",
-        "other_games_text": "🎮 *شحن ألعاب أخرى*\n━━━━━━━━━━━━\n📌 *الألعاب المتوفرة:*\n• ببجي موبايل (UC)\n• كول أوف ديوتي (CP)\n• فري فاير (DA)\n• جينشين إمباكت\n\n📞 *للطلب:* تواصل مع الدعم",
         "ff_packages_title": "💎 *باقات شحن جواهر فري فاير*\n━━━━━━━━━━━━\n✨ *باقات حصرية بأفضل الأسعار*\n⚡ *توصيل فوري خلال دقائق*\n━━━━━━━━━━━━\n*اختر الباقة المناسبة:*",
         
         # رسائل التحقق والتفعيل
@@ -57,7 +55,7 @@ T = {
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
         "inline_proofs_btn": "📢 قناة الإثباتات",
         
-        # مفاتيح السوشل ميديا (القوائم الهرمية الجديدة)
+        # مفاتيح السوشل ميديا (القوائم الهرمية)
         "social_media": "📢 خدمات سوشل ميديا",
         "social_choose_platform": "🌐 *اختر المنصة المطلوبة:*",
         "social_select_category": "📂 *اختر التصنيف:*",
@@ -94,7 +92,6 @@ T = {
         "back_to_products": "🔙 Back to Products",
         "games_services": "🎮 Gaming Services",
         "ff_services": "🕹️ Free Fire Services",
-        "other_games": "🎮 Other Games Top-up (deprecated)",
         "apps_service": "📱 App Subscriptions",
         "ff_topup": "💎 Free Fire Diamonds Top-up",
         "keys_service": "🔑 Create Hacker Keys",
@@ -113,7 +110,6 @@ T = {
         "no_stock": "❌ Sorry, no keys available for this duration.",
         "app_no_stock": "❌ This app is currently unavailable. Try another app.",
         "choose_section": "🛒 *Store Sections:*\n━━━━━━━━━━━━\nChoose the appropriate section:",
-        "other_games_text": "🎮 *Other Games Top-up*\n━━━━━━━━━━━━\n📌 *Available games:*\n• PUBG Mobile (UC)\n• Call of Duty (CP)\n• Free Fire (DA)\n• Genshin Impact\n\n📞 *To order:* Contact support",
         "ff_packages_title": "💎 *Free Fire Diamonds Packages*\n━━━━━━━━━━━━\n✨ *Exclusive packages at best prices*\n⚡ *Instant delivery in minutes*\n━━━━━━━━━━━━\n*Choose your package:*",
         
         # Verification and activation messages
@@ -134,7 +130,7 @@ T = {
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
         
-        # Social media messages (new hierarchical keys)
+        # Social media keys (new hierarchical)
         "social_media": "📢 Social Media Services",
         "social_choose_platform": "🌐 *Choose a platform:*",
         "social_select_category": "📂 *Select category:*",
