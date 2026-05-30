@@ -12,7 +12,7 @@ from config import (
 from database import add_purchase_record, get_lang
 from utils import is_whitelisted
 from languages import T
-from handlers_payment import purchase_ff_package, purchase_key, send_withdrawal_log
+from handlers_payment import purchase_ff_package, purchase_key, send_withdrawal_log, show_payment_methods
 
 def register_games_handlers(bot, common_funcs):
     """تسجيل معالجات فري فاير"""
@@ -63,7 +63,7 @@ def register_games_handlers(bot, common_funcs):
                       (user_id, call.from_user.username, 'ff', pkg, code, datetime.now().isoformat()))
             conn.commit()
             conn.close()
-            send_withdrawal_log(call.from_user.username, f"{pkg} جوهرة", prices[pkg], code_or_link=code)
+            send_withdrawal_log(call.from_user.username, f"{pkg} جوهرة", prices[pkg], code_or_link=code, bot=bot)
             for admin in ADMIN_IDS:
                 try:
                     bot.send_message(admin, f"🔄 الوكيل @{call.from_user.username} سحب {pkg} جوهرة (كود: {code})")
@@ -121,7 +121,7 @@ def register_games_handlers(bot, common_funcs):
                       (user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code, datetime.now().isoformat()))
             conn.commit()
             conn.close()
-            send_withdrawal_log(call.from_user.username, product_name, keys_inventory[prod_id]["prices"][days], extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
+            send_withdrawal_log(call.from_user.username, product_name, keys_inventory[prod_id]["prices"][days], extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code, bot=bot)
             for admin in ADMIN_IDS:
                 try:
                     bot.send_message(admin, f"🔄 الوكيل @{call.from_user.username} سحب مفتاح {product_name} مدة {days} أيام (كود: {code})")
@@ -156,7 +156,7 @@ def register_games_handlers(bot, common_funcs):
                       (user_id, call.from_user.username, 'app', app_id, download_link, datetime.now().isoformat()))
             conn.commit()
             conn.close()
-            send_withdrawal_log(call.from_user.username, product_name, price, extra_info=f"📢 قناة التحديثات: [انضم]({channel_link})\n", code_or_link=download_link)
+            send_withdrawal_log(call.from_user.username, product_name, price, extra_info=f"📢 قناة التحديثات: [انضم]({channel_link})\n", code_or_link=download_link, bot=bot)
             for admin in ADMIN_IDS:
                 try:
                     bot.send_message(admin, f"🔄 الوكيل @{call.from_user.username} سحب تطبيق {product_name}")
@@ -164,7 +164,7 @@ def register_games_handlers(bot, common_funcs):
                     pass
             bot.answer_callback_query(call.id, "🎉 تم تسليم التطبيق بنجاح!")
         else:
-            from handlers_payment import show_payment_methods
+            price = app_data["price"]
             show_payment_methods(user_id, 'app', app_id, price, bot)
             bot.answer_callback_query(call.id)
 
