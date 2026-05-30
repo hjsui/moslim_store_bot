@@ -1,10 +1,11 @@
 # services_mapping.py
 # هذا الملف يحدد المنصة الصحيحة لكل خدمة بناءً على service_id المعروف من API.
 # تم إنشاؤه يدوياً بناءً على البيانات التي قدمها صاحب المتجر.
+# يمكنك إضافة المزيد من المعرفات مستقبلاً عند ظهور خدمات جديدة.
 
-# قاموس يحول service_id -> platform_id (من بين الـ 12 منصة المعرفة)
 SERVICE_TO_PLATFORM = {
-    # فيسبوك
+    # ========== فيسبوك (Facebook) ==========
+    # متابعين صفحة / حساب
     1155: 'facebook',
     2255: 'facebook',
     2429: 'facebook',
@@ -13,67 +14,93 @@ SERVICE_TO_PLATFORM = {
     2064: 'facebook',
     2335: 'facebook',
     2254: 'facebook',
-    1732: 'facebook',
-    1606: 'facebook',
-    1803: 'facebook',
-    2136: 'facebook',
+    1732: 'facebook',        # متابعين + إعجابات (يظهر في القائمة)
+    1606: 'facebook',        # إعجابات + متابعين صفحة ضمان 30 يوم
+    1803: 'facebook',        # إعجابات + متابعين صفحة ضمان مدى الحياة
     
-    # تيك توك
-    1494: 'tiktok',
-    1522: 'tiktok',
-    1559: 'tiktok',
-    1560: 'tiktok',
-    1545: 'tiktok',
-    1422: 'tiktok',
-    1423: 'tiktok',
-    1178: 'tiktok',
+    # خدمات إضافية فيسبوك
+    2136: 'facebook',        # توثيق فيسبوك شهري
+    2013: 'facebook',        # أعضاء جروب فيسبوك
+    1518: 'facebook',
+    1874: 'facebook',
+    1875: 'facebook',
+    1876: 'facebook',
+    1877: 'facebook',
+    1878: 'facebook',
+    1402: 'facebook',
+    1636: 'facebook',
+    1328: 'facebook',
+    1505: 'facebook',
+    2215: 'facebook',        # تعليقات فيسبوك
     
-    # تلجرام
-    1497: 'telegram',
-    1498: 'telegram',
-    # باقي خدمات تلجرام (بدون service_id واضح) سيتم تصنيفها عبر الكلمات المفتاحية
+    # مشاهدات فيسبوك
+    1170: 'facebook', 1171: 'facebook', 2261: 'facebook',
+    1172: 'facebook', 1173: 'facebook', 1174: 'facebook',
+    2262: 'facebook', 1175: 'facebook', 2263: 'facebook',
+    2205: 'facebook', 2264: 'facebook', 2206: 'facebook',
+    2265: 'facebook', 2266: 'facebook',
+    1635: 'facebook', 1482: 'facebook', 1638: 'facebook',
+    1681: 'facebook', 1311: 'facebook', 2357: 'facebook',
+    1506: 'facebook',        # مشاهدات ستوري
     
-    # انستغرام
-    2328: 'instagram',
-    2329: 'instagram',
-    2330: 'instagram',
-    2331: 'instagram',
-    2332: 'instagram',
-    1886: 'instagram',
-    938: 'instagram',
-    1992: 'instagram',
-    1993: 'instagram',
-    2033: 'instagram',
-    2034: 'instagram',
-    1664: 'instagram',
-    1991: 'instagram',
+    # ========== تيك توك (TikTok) ==========
+    # متابعين
+    1894: 'tiktok', 2607: 'tiktok', 2608: 'tiktok',
+    2609: 'tiktok', 2610: 'tiktok', 2611: 'tiktok',
+    2612: 'tiktok', 1195: 'tiktok', 1531: 'tiktok', 2026: 'tiktok',
     
-    # يوتيوب
-    1752: 'youtube',
+    # لايكات
+    1494: 'tiktok', 1792: 'tiktok', 1794: 'tiktok', 1829: 'tiktok', 1189: 'tiktok',
+    1229: 'tiktok', 2014: 'tiktok',
     
-    # كواي
-    1333: 'kwai',
-    2411: 'kwai',
-    2412: 'kwai',
-    1618: 'kwai',
-    1880: 'kwai',
-    2720: 'kwai',
+    # مشاهدات
+    1223: 'tiktok', 1224: 'tiktok', 1225: 'tiktok', 1226: 'tiktok', 1227: 'tiktok', 1228: 'tiktok',
+    1495: 'tiktok',
     
-    # واتساب
-    1386: 'whatsapp',
-    2106: 'whatsapp',
-    2107: 'whatsapp',
-    2108: 'whatsapp',
-    2109: 'whatsapp',
-    2110: 'whatsapp',
+    # تعليقات
+    1818: 'tiktok', 2170: 'tiktok', 1196: 'tiktok', 2501: 'tiktok',
+    1232: 'tiktok', 1231: 'tiktok', 1230: 'tiktok',
     
-    # لينكد إن
-    # (لم يظهر service_id واضح، سيتم استخدام الكلمات المفتاحية)
+    # ريبوست
+    2627: 'tiktok', 2628: 'tiktok', 2629: 'tiktok', 2630: 'tiktok', 2631: 'tiktok', 2632: 'tiktok',
     
-    # سناب شات
-    1600: 'snapchat',  # من البيانات: متابعين سناب شات عرب (1600)
+    # ========== تلجرام (Telegram) ==========
+    2679: 'telegram',        # نجوم تلجرام
+    1986: 'telegram', 1486: 'telegram', 2090: 'telegram',
+    1443: 'telegram', 1485: 'telegram', 2327: 'telegram',  # أعضاء
+    1965: 'telegram', 1966: 'telegram', 1967: 'telegram', 1968: 'telegram',
+    1969: 'telegram', 1970: 'telegram', 1971: 'telegram', 1972: 'telegram',
+    1973: 'telegram', 1974: 'telegram', 1975: 'telegram',  # أعضاء بريميوم
+    1496: 'telegram', 1497: 'telegram', 1498: 'telegram',  # توثيق
     
-    # ألعاب واشتراكات (بدون service_id واضح، سيتم استخدام الكلمات المفتاحية)
+    # ========== انستغرام (Instagram) ==========
+    2328: 'instagram', 2329: 'instagram', 2330: 'instagram',
+    2331: 'instagram', 2332: 'instagram', 1886: 'instagram',
+    938: 'instagram', 1992: 'instagram', 1993: 'instagram',
+    2033: 'instagram', 2034: 'instagram', 1664: 'instagram', 1991: 'instagram',
+    
+    # ========== يوتيوب (YouTube) ==========
+    1752: 'youtube',         # مشتركين مصريين
+    
+    # ========== كواي (Kwai) ==========
+    1333: 'kwai', 2411: 'kwai', 2412: 'kwai', 1618: 'kwai',
+    1880: 'kwai', 2720: 'kwai',
+    
+    # ========== واتساب (WhatsApp) ==========
+    1386: 'whatsapp', 2106: 'whatsapp', 2107: 'whatsapp',
+    2108: 'whatsapp', 2109: 'whatsapp', 2110: 'whatsapp',
+    
+    # ========== لينكد إن (LinkedIn) ==========
+    # لا توجد معرفات واضحة من القائمة، ستتم معالجتها بالكلمات المفتاحية أو تترك فارغة.
+    
+    # ========== سناب شات (Snapchat) ==========
+    1600: 'snapchat',        # متابعين سناب شات عرب (يوجد معرف 1600)
+    
+    # ========== ألعاب واشتراكات (Games) ==========
+    # لا توجد معرفات واضحة في القائمة، سيتم وضعها لاحقاً عند الحاجة.
+    
+    # ========== أخرى (Other) ==========
+    # أي معرف غير موجود هنا سيتم وضعه تلقائياً في 'other'
 }
 
-# يمكن إضافة المزيد من المعرفات يدوياً مستقبلاً عند ظهور خدمات جديدة.
+# هذا القاموس سيستخدم داخل social_api.py لتصحيح منصة كل خدمة قبل التنظيم.
