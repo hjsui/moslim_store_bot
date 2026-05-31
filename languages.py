@@ -20,8 +20,6 @@ T = {
         "apps_service": "📱 اشتراكات التطبيقات",
         "ff_topup": "💎 شحن جواهر فري فاير",
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
-        
-        # ✅ المفتاح الجديد المطلوب
         "back_to_games": "🔙 العودة لخدمات الألعاب",
         
         # رسائل الاختيارات العامة
@@ -58,7 +56,7 @@ T = {
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
         "inline_proofs_btn": "📢 قناة الإثباتات",
         
-        # مفاتيح السوشل ميديا
+        # مفاتيح السوشل ميديا (القوائم الهرمية)
         "social_media": "📢 خدمات سوشل ميديا",
         "social_choose_platform": "🌐 *اختر المنصة المطلوبة:*",
         "social_select_category": "📂 *اختر التصنيف:*",
@@ -98,8 +96,6 @@ T = {
         "apps_service": "📱 App Subscriptions",
         "ff_topup": "💎 Free Fire Diamonds Top-up",
         "keys_service": "🔑 Create Hacker Keys",
-        
-        # ✅ المفتاح الجديد المطلوب
         "back_to_games": "🔙 Back to Games Services",
         
         # General choice messages
@@ -136,7 +132,7 @@ T = {
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
         
-        # Social media messages
+        # Social media keys
         "social_media": "📢 Social Media Services",
         "social_choose_platform": "🌐 *Choose a platform:*",
         "social_select_category": "📂 *Select category:*",
