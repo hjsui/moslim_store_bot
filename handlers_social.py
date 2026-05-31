@@ -1,5 +1,6 @@
 # handlers_social.py
 # دوال السوشل ميديا (الهيكل الهرمي، التصنيفات، التدفق)
+# تم إصلاح: تدفق الطلب، أزرار العودة، عرض الخدمات لجميع المنصات
 
 import telebot
 from telebot import types
@@ -17,11 +18,11 @@ user_social_state = {}
 
 def register_social_handlers(bot, common_funcs, payment_funcs):
     """تسجيل معالجات السوشل ميديا"""
-
+    
     show_main_menu = common_funcs['show_main_menu']
     show_payment_methods = payment_funcs['show_payment_methods']
 
-    def show_social_platforms(user_id, lang):
+    def show_social_platforms(user_id, lang, bot_obj=None):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
         for platform_id, data in SOCIAL_STRUCTURE.items():
@@ -53,15 +54,30 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         t = T[lang]
         platform_data = SOCIAL_STRUCTURE.get(platform_id)
         subcategories = get_subcategories_list(platform_id, category_name)
-        if not subcategories:
-            service_ids = get_service_ids_from_structure(platform_id, category_name)
-            if not service_ids:
-                bot.send_message(user_id, "⚠️ لا توجد خدمات في هذا التصنيف.")
-                return
-            services = get_services_by_ids(service_ids)
-            if not services:
-                bot.send_message(user_id, "⚠️ لا توجد خدمات متاحة حالياً.")
-                return
+        
+        # الحصول على قائمة service_ids لهذا التصنيف (سواء كان له تصنيفات فرعية أم لا)
+        service_ids = get_service_ids_from_structure(platform_id, category_name)
+        
+        if not service_ids:
+            bot.send_message(user_id, "⚠️ لا توجد خدمات في هذا التصنيف.")
+            return
+        
+        services = get_services_by_ids(service_ids)
+        if not services:
+            bot.send_message(user_id, "⚠️ لا توجد خدمات متاحة حالياً.")
+            return
+        
+        # تخزين الخدمات مباشرة (بدون انتظار تصنيف فرعي إذا كان هناك تصنيفات فرعية، سنعرضها)
+        if subcategories:
+            # توجد تصنيفات فرعية، نعرضها للمستخدم
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            for sub_name, sub_icon in subcategories:
+                btn_text = f"{sub_icon} {sub_name}"
+                markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"social_subcategory_{platform_id}_{category_name}_{sub_name}"))
+            markup.add(types.InlineKeyboardButton("🔙 رجوع للتصنيفات", callback_data=f"social_back_to_categories_{platform_id}"))
+            bot.send_message(user_id, f"{platform_data['icon']} *{platform_data['name']} / {category_name}*\n{t['social_select_subcategory']}", reply_markup=markup, parse_mode="Markdown")
+        else:
+            # لا توجد تصنيفات فرعية، نعرض الخدمات مباشرة
             user_social_state[user_id] = {
                 'platform_id': platform_id,
                 'platform_name': platform_data['name'],
@@ -71,13 +87,6 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
                 'category_name': category_name
             }
             show_services_list(user_id, lang)
-            return
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        for sub_name, sub_icon in subcategories:
-            btn_text = f"{sub_icon} {sub_name}"
-            markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"social_subcategory_{platform_id}_{category_name}_{sub_name}"))
-        markup.add(types.InlineKeyboardButton("🔙 رجوع للتصنيفات", callback_data=f"social_back_to_categories_{platform_id}"))
-        bot.send_message(user_id, f"{platform_data['icon']} *{platform_data['name']} / {category_name}*\n{t['social_select_subcategory']}", reply_markup=markup, parse_mode="Markdown")
 
     def show_services_list(user_id, lang):
         t = T[lang]
@@ -90,6 +99,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         for svc in services:
             btn_text = f"{svc['name']} - {svc['rate']} USD"
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"social_service_{svc['service']}"))
+        # زر رجوع حسب السياق
         if data.get('subcategory_name'):
             back_callback = f"social_back_to_subcategories_{data['platform_id']}_{data['category_name']}"
         elif data.get('category_name'):
@@ -130,6 +140,8 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         subcategory_name = '_'.join(parts[4:])
         user_id = call.from_user.id
         lang = get_lang(user_id)
+        
+        # جلب service_ids للتصنيف الفرعي
         service_ids = get_service_ids_from_structure(platform_id, category_name, subcategory_name)
         if not service_ids:
             bot.answer_callback_query(call.id, "❌ لا توجد خدمات في هذا التصنيف.", show_alert=True)
@@ -249,7 +261,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         del user_social_state[user_id]
 
         bot.send_message(user_id, f"✅ *تم إنشاء طلب رقم `{order_id}` بنجاح!*\n💰 المبلغ المطلوب: {total_price} درهم.\n📱 المنصة: {platform_name}\n📌 الخدمة: {service['name']}\n\nالرجاء اختيار طريقة الدفع من القائمة أدناه.", parse_mode="Markdown")
-        show_payment_methods(user_id, 'social', api_payload, total_price, bot)
+        show_payment_methods(user_id, 'social', api_payload, total_price)
 
     @bot.message_handler(commands=['cancel_social'])
     def cancel_social_order(message):
@@ -282,14 +294,44 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         else:
             bot.send_message(message.chat.id, "❌ لم نتمكن من جلب حالة الطلب.")
 
-    # معالج للزر social_media من القائمة الرئيسية (لأنه لم يتم التقاطه في common)
-    @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)]["social_media"])
-    def social_media_button(message):
+    # معالج للرسائل النصية (الرابط والكمية)
+    @bot.message_handler(func=lambda msg: True, content_types=['text'])
+    def handle_social_text(message):
         user_id = message.from_user.id
+        if user_id not in user_social_state:
+            return
+        current_step = user_social_state[user_id].get('step')
         lang = get_lang(user_id)
-        show_social_platforms(user_id, lang)
+        t = T[lang]
+        
+        if current_step == 'awaiting_link':
+            user_social_state[user_id]['link'] = message.text
+            user_social_state[user_id]['step'] = 'awaiting_quantity'
+            bot.send_message(user_id, t["social_send_quantity"])
+        elif current_step == 'awaiting_quantity':
+            try:
+                quantity = int(message.text)
+                if quantity < 1:
+                    raise ValueError
+                user_social_state[user_id]['quantity'] = quantity
+                service = user_social_state[user_id]['selected_service']
+                original_price = float(service['rate'])
+                total_price = calculate_price_with_profit(original_price * quantity)
+                user_social_state[user_id]['total_price'] = total_price
+                summary = t["social_order_summary"].format(
+                    user_social_state[user_id].get('platform_name', ''),
+                    service['name'],
+                    user_social_state[user_id]['link'],
+                    quantity,
+                    total_price
+                )
+                bot.send_message(user_id, summary, parse_mode="Markdown")
+                user_social_state[user_id]['step'] = 'awaiting_confirmation'
+            except ValueError:
+                bot.send_message(user_id, t["social_invalid_quantity"])
 
     # إرجاع user_social_state ليتمكن handlers.py من الوصول إليه
     return {
-        'user_social_state': user_social_state
+        'user_social_state': user_social_state,
+        'show_social_platforms': show_social_platforms
     }
