@@ -1,6 +1,4 @@
 # handlers_payment.py
-# دوال نظام الدفع (طرق الدفع، قبول/رفض الطلبات، إثباتات)
-
 import telebot
 from telebot import types
 import sqlite3
@@ -285,6 +283,7 @@ def register_payment_handlers(bot):
         finalize_order(order_id, accepted=False, admin_id=call.from_user.id)
         bot.answer_callback_query(call.id, "❌ تم رفض الطلب")
 
+    # ========== تصدير الدوال المطلوبة من الملف ==========
     return {
         'show_payment_methods': show_payment_methods,
         'purchase_ff_package': purchase_ff_package,
