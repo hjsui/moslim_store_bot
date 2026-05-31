@@ -173,12 +173,14 @@ SOCIAL_STRUCTURE = {
 }
 
 def get_categories_list(platform_id):
+    """إرجاع قائمة التصنيفات الرئيسية لمنصة معينة"""
     platform = SOCIAL_STRUCTURE.get(platform_id)
     if not platform:
         return []
     return [(cat['name'], cat['icon']) for cat in platform.get('categories', [])]
 
 def get_subcategories_list(platform_id, category_name):
+    """إرجاع قائمة التصنيفات الفرعية لتصنيف معين"""
     platform = SOCIAL_STRUCTURE.get(platform_id)
     if not platform:
         return []
@@ -188,19 +190,22 @@ def get_subcategories_list(platform_id, category_name):
     return []
 
 def get_service_ids_from_structure(platform_id, category_name=None, subcategory_name=None):
+    """إرجاع قائمة service_ids للمسار المحدد"""
     platform = SOCIAL_STRUCTURE.get(platform_id)
     if not platform:
         return []
     for cat in platform.get('categories', []):
         if category_name is None or cat['name'] == category_name:
-            if 'service_ids' in cat:
-                return cat['service_ids']
+            # إذا كان هناك تصنيف فرعي محدد
             if subcategory_name is not None and 'subcategories' in cat:
                 for sub in cat['subcategories']:
                     if sub['name'] == subcategory_name:
-                        return sub['service_ids']
+                        return sub.get('service_ids', [])
+            # إذا كان التصنيف الرئيسي له service_ids مباشرة
+            elif 'service_ids' in cat:
+                return cat['service_ids']
+            # إذا كان التصنيف الرئيسي يحتوي على تصنيفات فرعية (ولم نحدد تصنيفاً فرعياً)، نجمع كل الخدمات من جميع التصنيفات الفرعية
             elif 'subcategories' in cat:
-                # جمع كل service_ids من التصنيفات الفرعية
                 all_ids = []
                 for sub in cat['subcategories']:
                     all_ids.extend(sub.get('service_ids', []))
