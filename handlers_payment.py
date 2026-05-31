@@ -11,9 +11,9 @@ from languages import T
 from social_api import add_order
 
 def register_payment_handlers(bot):
-    """تسجيل معالجات الدفع (طرق الدفع، قبول/رفض الطلبات، إثباتات)"""
+    """تسجيل معالجات الدفع - يجب استدعاؤه قبل handlers_games و handlers_social"""
 
-    def show_payment_methods(user_id, product_type, product_id, amount, bot_obj=None):
+    def show_payment_methods(user_id, product_type, product_id, amount):
         lang = get_lang(user_id)
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=1)
@@ -22,12 +22,12 @@ def register_payment_handlers(bot):
             markup.add(types.InlineKeyboardButton(name, callback_data=f"pay_{key}_{product_type}_{product_id}_{amount}"))
         bot.send_message(user_id, t["choose_payment"], reply_markup=markup, parse_mode="Markdown")
 
-    def purchase_ff_package(user_id, pkg, lang, bot_obj=None):
+    def purchase_ff_package(user_id, pkg, lang):
         from config import prices
         amount = prices[pkg]
         show_payment_methods(user_id, 'ff', pkg, amount)
 
-    def purchase_key(user_id, days, lang, bot_obj=None):
+    def purchase_key(user_id, days, lang):
         from config import keys_inventory
         price = keys_inventory['dripclient']['prices'][days]
         show_payment_methods(user_id, 'key', f"dripclient_{days}", price)
@@ -139,7 +139,6 @@ def register_payment_handlers(bot):
                     bot.send_message(user_id, "❌ حدث خطأ داخلي. تم إبلاغ المدير.")
                     update_order_status(order_id, 'failed', admin_action='internal_error')
         else:
-            # رفض الطلب
             if product_type == 'ff':
                 product_name = f"جواهر فري فاير ({product_id} جوهرة)"
             elif product_type == 'key':
@@ -163,7 +162,7 @@ def register_payment_handlers(bot):
                 except:
                     pass
 
-    # ========== كول باك الدفع ==========
+    # معالجات كول باك الدفع
     @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
     def handle_payment_method(call):
         parts = call.data.split('_', 4)
@@ -283,7 +282,6 @@ def register_payment_handlers(bot):
         finalize_order(order_id, accepted=False, admin_id=call.from_user.id)
         bot.answer_callback_query(call.id, "❌ تم رفض الطلب")
 
-    # ========== تصدير الدوال المطلوبة من الملف ==========
     return {
         'show_payment_methods': show_payment_methods,
         'purchase_ff_package': purchase_ff_package,
