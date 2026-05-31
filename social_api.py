@@ -1,6 +1,6 @@
 # social_api.py
 # هذا الملف مسؤول عن التواصل مع API موقع xfollowr لخدمات السوشل ميديا
-# تمت إضافة دوال للبحث عن الخدمات بواسطة service_id وجلب عدة خدمات دفعة واحدة
+# تمت إضافة دوال البحث عن الخدمات، التخزين المؤقت، وجلب خدمات متعددة
 
 import requests
 import time
@@ -89,7 +89,6 @@ def add_order(service_id, link, quantity, **kwargs):
         'link': link,
         'quantity': quantity
     }
-    # إضافة أي معاملات إضافية تم تمريرها
     params.update(kwargs)
     return api_request('add', params)
 
