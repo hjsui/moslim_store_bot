@@ -1,5 +1,5 @@
 # handlers.py
-# ملف واحد موحد - الكود النهائي المصحح بالكامل
+# الملف النهائي - إزالة أزرار العودة غير الضرورية، إعادة زر "العودة للمنتجات"، إصلاح تدفق السوشل ميديا
 
 import telebot
 from telebot import types
@@ -26,7 +26,7 @@ from social_structure import (
     get_service_ids_from_structure
 )
 
-# ========== متغيرات مؤقتة (خارج الدوال لضمان الوصول العام) ==========
+# ========== متغيرات عامة ==========
 user_social_state = {}
 services_cache = None
 services_cache_time = 0
@@ -43,7 +43,7 @@ def get_services_cached():
 def register_all_handlers(bot):
     """تسجيل جميع معالجات البوت"""
 
-    # ========== دوال مساعدة داخلية ==========
+    # ========== دوال مساعدة ==========
     def send_lang_selection(chat_id):
         photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
         caption = "🌍 *Please select your language / اختر لغتك*"
@@ -70,12 +70,12 @@ def register_all_handlers(bot):
         markup.add(t["apps_service"], t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
 
-    # ✅ تم تصحيح زر العودة هنا (يظهر "العودة لأقسام المتجر")
+    # قائمة الألعاب (بدون زر "العودة لخدمات الألعاب" هنا)
     def show_games_menu(message, lang):
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(t["ff_services"])
-        markup.add(t["back_to_sections"])  # هذا الزر يعود إلى قائمة الخدمات الرئيسية
+        markup.add(t["back_to_sections"])  # العودة لأقسام المتجر
         bot.send_message(message.chat.id, "🎮 *اختر اللعبة:*", reply_markup=markup, parse_mode="Markdown")
 
     def show_ff_packages(message, lang):
@@ -86,7 +86,7 @@ def register_all_handlers(bot):
                 price = prices[pkg]
                 markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
         markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
-        # ✅ زر العودة إلى خدمات الألعاب
+        # ✅ زر العودة لخدمات الألعاب (موجود فقط هنا)
         markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
@@ -96,8 +96,7 @@ def register_all_handlers(bot):
         for prod_id, prod_data in keys_inventory.items():
             btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
-        # ✅ زر العودة إلى خدمات الألعاب
-        markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
+        # ✅ لا نضع زر العودة هنا، سيظهر في شاشة اختيار المدة
         bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
     def show_apps_products(message, lang):
@@ -367,7 +366,7 @@ def register_all_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, T[lang]["welcome_after_lang"].format(CHANNEL_PROOFS), parse_mode="Markdown")
 
-    # ========== معالج الرسائل العامة (الأزرار الرئيسية) ==========
+    # ========== معالج الرسائل العامة ==========
     @bot.message_handler(func=lambda msg: True, content_types=['text'])
     def handle_messages(message):
         user_id = message.from_user.id
@@ -381,23 +380,20 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # ✅ الجزء الخاص بالتعامل مع حالة السوشل ميديا (تم التأكد من صحته)
+        # معالجة حالة السوشل ميديا (الرابط والكمية)
         if user_id in user_social_state:
             current_step = user_social_state[user_id].get('step')
-            # إلغاء الطلب إذا كتب المستخدم /cancel_social أو إلغاء أو رجوع
             if message.text == '/cancel_social' or message.text == 'إلغاء' or message.text == 'رجوع':
                 del user_social_state[user_id]
                 bot.send_message(user_id, "❌ تم إلغاء طلب السوشل ميديا. يمكنك البدء من جديد.")
                 conn.close()
                 return
-            
             if current_step == 'awaiting_link':
                 user_social_state[user_id]['link'] = message.text
                 user_social_state[user_id]['step'] = 'awaiting_quantity'
                 bot.send_message(user_id, t["social_send_quantity"])
                 conn.close()
                 return
-            
             elif current_step == 'awaiting_quantity':
                 try:
                     quantity = int(message.text)
@@ -408,19 +404,14 @@ def register_all_handlers(bot):
                     original_price = float(service['rate'])
                     total_price = calculate_price_with_profit(original_price * quantity)
                     user_social_state[user_id]['total_price'] = total_price
-                    
-                    # ✅ عرض ملخص الطلب
-                    platform_name = user_social_state[user_id].get('platform_name', '')
                     summary = t["social_order_summary"].format(
-                        platform_name,
+                        user_social_state[user_id].get('platform_name', ''),
                         service['name'],
                         user_social_state[user_id]['link'],
                         quantity,
                         total_price
                     )
                     bot.send_message(user_id, summary, parse_mode="Markdown")
-                    
-                    # ✅ الانتقال إلى حالة انتظار التأكيد
                     user_social_state[user_id]['step'] = 'awaiting_confirmation'
                     conn.close()
                     return
@@ -429,8 +420,7 @@ def register_all_handlers(bot):
                     conn.close()
                     return
             elif current_step == 'awaiting_confirmation':
-                # نطلب من المستخدم تأكيد الطلب إذا كان يرسل رسائل أخرى
-                bot.send_message(user_id, "⚠️ يرجى تأكيد الطلب باستخدام /confirm_social أو إلغاؤه باستخدام /cancel_social")
+                bot.send_message(user_id, "⚠️ يرجى تأكيد الطلب باستخدام /confirm_social أو /cancel_social")
                 conn.close()
                 return
 
@@ -458,7 +448,7 @@ def register_all_handlers(bot):
         elif text == t["ff_services"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(t["keys_service"], t["ff_topup"])
-            markup.add(t["back_to_games"])  # زر العودة إلى خدمات الألعاب
+            markup.add(t["back_to_games"])
             bot.send_message(message.chat.id, "🕹️ *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
         elif text == t["shop_now"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -503,7 +493,7 @@ def register_all_handlers(bot):
             bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
         conn.close()
 
-    # ========== معالجات كول باك السوشل ميديا ==========
+    # ========== كول باك السوشل ميديا ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('social_platform_'))
     def social_platform_selected(call):
         user_id = call.from_user.id
@@ -691,7 +681,7 @@ def register_all_handlers(bot):
         else:
             bot.send_message(message.chat.id, "❌ لم نتمكن من جلب حالة الطلب.")
 
-    # ========== معالجات شراء المنتجات الأساسية ==========
+    # ========== شراء الجواهر ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
     def process_purchase(call):
         pkg = call.data.split('_')[1]
@@ -722,6 +712,7 @@ def register_all_handlers(bot):
             purchase_ff_package(user_id, pkg, lang)
             bot.answer_callback_query(call.id)
 
+    # ========== اختيار مدة المفتاح (مع زر العودة للمنتجات) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
     def choose_duration(call):
         prod_id = call.data.split('_')[2]
@@ -734,7 +725,8 @@ def register_all_handlers(bot):
         markup = types.InlineKeyboardMarkup(row_width=2)
         for days, price in prod_data["prices"].items():
             markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 💰", callback_data=f"key_buy_{prod_id}_{days}"))
-        markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
+        # ✅ زر العودة للمنتجات (كما كان سابقاً)
+        markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
         bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
         try:
@@ -742,6 +734,7 @@ def register_all_handlers(bot):
         except:
             pass
 
+    # شراء المفتاح
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
     def handle_key_buy(call):
         parts = call.data.split('_')
@@ -778,6 +771,7 @@ def register_all_handlers(bot):
             purchase_key(user_id, days, lang)
             bot.answer_callback_query(call.id)
 
+    # شراء التطبيقات
     @bot.callback_query_handler(func=lambda call: call.data.startswith('app_buy_'))
     def process_app_purchase(call):
         app_id = call.data.split('_')[2]
@@ -813,7 +807,7 @@ def register_all_handlers(bot):
             show_payment_methods(user_id, 'app', app_id, price)
             bot.answer_callback_query(call.id)
 
-    # ========== معالجات نظام الدفع ==========
+    # ========== نظام الدفع ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
     def handle_payment_method(call):
         parts = call.data.split('_', 4)
