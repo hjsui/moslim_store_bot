@@ -9,13 +9,15 @@ from config import (
     ADMIN_IDS, CHANNEL_PROOFS, ADMIN_CONTACT,
     codes_inventory, prices, keys_inventory, apps_inventory
 )
-from database import add_purchase_record, get_lang
+from database import add_purchase_record
 from utils import is_whitelisted
 from languages import T
 from handlers_payment import purchase_ff_package, purchase_key, send_withdrawal_log
 
 def register_games_handlers(bot, common_funcs):
     """تسجيل معالجات فري فاير"""
+
+    show_games_submenu = common_funcs['show_games_submenu']
 
     def show_ff_packages(message, lang, bot_obj=None):
         t = T[lang]
@@ -25,7 +27,6 @@ def register_games_handlers(bot, common_funcs):
                 price = prices[pkg]
                 markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
         markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
-        # ✅ تعديل: استخدام back_to_games بدلاً من back_to_sections
         markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
@@ -35,7 +36,6 @@ def register_games_handlers(bot, common_funcs):
         for prod_id, prod_data in keys_inventory.items():
             btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
-        # ✅ تعديل: إضافة زر العودة إلى قائمة الألعاب
         markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
@@ -45,8 +45,6 @@ def register_games_handlers(bot, common_funcs):
         for app_id, app_data in apps_inventory.items():
             btn_text = app_data["name_ar"] if lang == 'ar' else app_data["name_en"]
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"app_buy_{app_id}"))
-        # ✅ تعديل: إضافة زر العودة إلى قائمة الألعاب
-        markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["choose_app"], reply_markup=markup, parse_mode="Markdown")
 
     # معالجات شراء الجواهر
@@ -174,19 +172,35 @@ def register_games_handlers(bot, common_funcs):
             show_payment_methods(user_id, 'app', app_id, price, bot)
             bot.answer_callback_query(call.id)
 
-    # زر العودة إلى قائمة الألعاب (يتم التعامل معه في common)
+    @bot.callback_query_handler(func=lambda call: call.data == "back_to_key_products")
+    def back_to_key_products(call):
+        lang = get_lang(call.from_user.id)
+        t = T[lang]
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        for prod_id, prod_data in keys_inventory.items():
+            btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
+            markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
+        bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
     @bot.callback_query_handler(func=lambda call: call.data == "back_to_games_menu")
     def back_to_games_menu(call):
         lang = get_lang(call.from_user.id)
-        t = T[lang]
-        from handlers_common import register_common_handlers
-        # استدعاء قائمة الألعاب من common_funcs
-        common_funcs['show_games_menu'](call.message, lang)
+        show_games_submenu(call.message, lang)
         bot.answer_callback_query(call.id)
 
-    # تصدير الدوال المستخدمة خارجياً
     return {
         'show_ff_packages': show_ff_packages,
         'show_keys_products': show_keys_products,
         'show_apps_products': show_apps_products
     }
+
+# دالة مساعدة للحصول على اللغة (تجنب مشكلة الاستيراد الدائري)
+def get_lang(user_id):
+    import sqlite3
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT language FROM users WHERE user_id=?", (user_id,))
+    res = c.fetchone()
+    conn.close()
+    return res[0] if res else 'ar'
