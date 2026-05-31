@@ -107,20 +107,18 @@ def register_common_handlers(bot):
         if text == t["services"]:
             show_services_menu(message, lang)
         elif text == t["social_media"]:
-            # استدعاء دوال السوشل ميديا من خلال التسجيل المباشر
-            # سيتم التعامل معها في handlers_social.py عبر callback
-            # لكن نمررها هنا للتنبيه: لا يوجد كود مباشر، لأن callback مسجل هناك
-            # في الواقع، يجب استدعاء show_social_platforms من handlers_social
-            # لكن هذا سينتج استيراد دائري. الأفضل: تسجيل معالج social_media مباشرة في handlers_social
-            # لذلك لن نضع شيئاً هنا، وسيتم التعامل مع الزر بواسطة معالج منفصل في handlers_social.
-            # لكن لتجنب الخطأ، نضع رسالة مؤقتة (لن تظهر لأن handlers_social سيلتقطها أولاً)
-            pass
+            # ✅ إصلاح: استدعاء دوال السوشل ميديا مباشرة
+            from handlers_social import show_social_platforms
+            show_social_platforms(user_id, lang, bot)
+            conn.close()
+            return
         elif text == t["games_services"]:
             show_games_menu(message, lang)
         elif text == t["ff_services"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(t["keys_service"], t["ff_topup"])
-            markup.add(t["back_to_sections"])
+            # ✅ إصلاح: زر العودة يجب أن يعود إلى قائمة الألعاب
+            markup.add(t["back_to_games"])
             bot.send_message(message.chat.id, "🕹️ *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
         elif text == t["shop_now"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -139,6 +137,9 @@ def register_common_handlers(bot):
         elif text == t["back_to_main"]:
             show_main_menu(message, lang)
         elif text == t["back_to_sections"]:
+            # ✅ إصلاح: العودة إلى قائمة الألعاب
+            show_games_menu(message, lang)
+        elif text == t["back_to_games"]:
             show_games_menu(message, lang)
         elif text == t["proofs"]:
             markup = types.InlineKeyboardMarkup()
