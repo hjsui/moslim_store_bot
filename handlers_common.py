@@ -1,6 +1,4 @@
 # handlers_common.py
-# الدوال المشتركة (القوائم الرئيسية، اختيار اللغة، العرض العام)
-
 import telebot
 from telebot import types
 import sqlite3
@@ -10,7 +8,7 @@ from database import get_lang, set_lang, get_verified_count
 from languages import T
 
 def register_common_handlers(bot):
-    """تسجيل الدوال المشتركة (غير مرتبطة بمنتجات محددة)"""
+    """تسجيل الدوال المشتركة"""
 
     def send_lang_selection(chat_id):
         photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
@@ -38,11 +36,12 @@ def register_common_handlers(bot):
         markup.add(t["apps_service"], t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
 
-    def show_games_submenu(message, lang):
+    def show_games_menu(message, lang):
+        """قائمة الألعاب (تحتوي على فري فاير فقط حالياً)"""
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(t["ff_services"])
-        markup.add(t["back_to_games"])
+        markup.add(t["back_to_sections"])   # هذا الزر سيعود إلى خدمات المتجر الرئيسية
         bot.send_message(message.chat.id, "🎮 *اختر اللعبة:*", reply_markup=markup, parse_mode="Markdown")
 
     # ========== معالج /start ==========
@@ -77,7 +76,7 @@ def register_common_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, T[lang]["welcome_after_lang"].format(CHANNEL_PROOFS), parse_mode="Markdown")
 
-    # ========== معالج الرسائل العامة (الأزرار الرئيسية) ==========
+    # ========== معالج الرسائل العامة ==========
     @bot.message_handler(func=lambda msg: True, content_types=['text'])
     def handle_messages(message):
         user_id = message.from_user.id
@@ -91,7 +90,6 @@ def register_common_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # التحقق من كلمة المرور
         if not verified:
             if message.text == STORE_PASSWORD:
                 c.execute("UPDATE users SET verified=1 WHERE user_id=?", (user_id,))
@@ -107,37 +105,30 @@ def register_common_handlers(bot):
         if text == t["services"]:
             show_services_menu(message, lang)
         elif text == t["social_media"]:
-            from handlers_social import show_social_platforms
-            show_social_platforms(user_id, lang, bot)
-            conn.close()
-            return
+            # سيتم التعامل معها في handlers_social عبر معالج منفصل (social_media_button)
+            # لكننا نمررها هنا للتنبيه فقط
+            pass
         elif text == t["games_services"]:
-            show_games_submenu(message, lang)
+            show_games_menu(message, lang)
         elif text == t["ff_services"]:
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-            markup.add(t["keys_service"], t["ff_topup"])
-            markup.add(t["back_to_games"])
-            bot.send_message(message.chat.id, "🕹️ *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
+            # سيتم التعامل معها في handlers_games
+            pass
         elif text == t["shop_now"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(t["games_services"], t["social_media"])
             markup.add(t["apps_service"], t["back_to_main"])
             bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
         elif text == t["apps_service"]:
-            from handlers_games import show_apps_products
-            show_apps_products(message, lang, bot)
+            # سيتم التعامل معها في handlers_games (show_apps_products)
+            pass
         elif text == t["ff_topup"]:
-            from handlers_games import show_ff_packages
-            show_ff_packages(message, lang, bot)
+            pass
         elif text == t["keys_service"]:
-            from handlers_games import show_keys_products
-            show_keys_products(message, lang, bot)
+            pass
         elif text == t["back_to_main"]:
             show_main_menu(message, lang)
         elif text == t["back_to_sections"]:
             show_services_menu(message, lang)
-        elif text == t["back_to_games"]:
-            show_games_submenu(message, lang)
         elif text == t["proofs"]:
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(t.get("inline_proofs_btn", "📢 قناة الإثباتات"), url=CHANNEL_PROOFS))
@@ -166,9 +157,8 @@ def register_common_handlers(bot):
             bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
         conn.close()
 
-    # إعادة الدوال التي قد تحتاجها الملفات الأخرى
     return {
         'show_main_menu': show_main_menu,
         'show_services_menu': show_services_menu,
-        'show_games_submenu': show_games_submenu
+        'show_games_menu': show_games_menu
     }
