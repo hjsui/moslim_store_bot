@@ -1,5 +1,5 @@
 # handlers.py
-# ملف واحد موحد يحتوي على جميع معالجات البوت (يعمل بكامل طاقته)
+# ملف واحد موحد - الكود النهائي المصحح بالكامل
 
 import telebot
 from telebot import types
@@ -12,21 +12,21 @@ from config import (
 )
 from database import (
     get_lang, set_lang, get_verified_count, add_purchase_record,
-    create_order, update_order_status, get_order, save_social_order
+    create_order, update_order_status, get_order
 )
 from utils import is_admin, is_whitelisted
 from payment_methods import PAYMENT_METHODS
 from languages import T
 from social_api import (
     get_services, add_order, get_order_status, calculate_price_with_profit,
-    get_service_by_id, get_services_by_ids
+    get_services_by_ids
 )
 from social_structure import (
     SOCIAL_STRUCTURE, get_categories_list, get_subcategories_list,
     get_service_ids_from_structure
 )
 
-# ========== متغيرات مؤقتة ==========
+# ========== متغيرات مؤقتة (خارج الدوال لضمان الوصول العام) ==========
 user_social_state = {}
 services_cache = None
 services_cache_time = 0
@@ -70,11 +70,12 @@ def register_all_handlers(bot):
         markup.add(t["apps_service"], t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
 
+    # ✅ تم تصحيح زر العودة هنا (يظهر "العودة لأقسام المتجر")
     def show_games_menu(message, lang):
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(t["ff_services"])
-        markup.add(t["back_to_games"])  # ✅ زر العودة لخدمات الألعاب
+        markup.add(t["back_to_sections"])  # هذا الزر يعود إلى قائمة الخدمات الرئيسية
         bot.send_message(message.chat.id, "🎮 *اختر اللعبة:*", reply_markup=markup, parse_mode="Markdown")
 
     def show_ff_packages(message, lang):
@@ -85,6 +86,7 @@ def register_all_handlers(bot):
                 price = prices[pkg]
                 markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
         markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
+        # ✅ زر العودة إلى خدمات الألعاب
         markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
@@ -94,6 +96,7 @@ def register_all_handlers(bot):
         for prod_id, prod_data in keys_inventory.items():
             btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
+        # ✅ زر العودة إلى خدمات الألعاب
         markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
@@ -378,20 +381,23 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # التعامل مع حالة السوشل ميديا (الرابط والكمية)
+        # ✅ الجزء الخاص بالتعامل مع حالة السوشل ميديا (تم التأكد من صحته)
         if user_id in user_social_state:
             current_step = user_social_state[user_id].get('step')
+            # إلغاء الطلب إذا كتب المستخدم /cancel_social أو إلغاء أو رجوع
             if message.text == '/cancel_social' or message.text == 'إلغاء' or message.text == 'رجوع':
                 del user_social_state[user_id]
                 bot.send_message(user_id, "❌ تم إلغاء طلب السوشل ميديا. يمكنك البدء من جديد.")
                 conn.close()
                 return
+            
             if current_step == 'awaiting_link':
                 user_social_state[user_id]['link'] = message.text
                 user_social_state[user_id]['step'] = 'awaiting_quantity'
                 bot.send_message(user_id, t["social_send_quantity"])
                 conn.close()
                 return
+            
             elif current_step == 'awaiting_quantity':
                 try:
                     quantity = int(message.text)
@@ -402,14 +408,19 @@ def register_all_handlers(bot):
                     original_price = float(service['rate'])
                     total_price = calculate_price_with_profit(original_price * quantity)
                     user_social_state[user_id]['total_price'] = total_price
+                    
+                    # ✅ عرض ملخص الطلب
+                    platform_name = user_social_state[user_id].get('platform_name', '')
                     summary = t["social_order_summary"].format(
-                        user_social_state[user_id].get('platform_name', ''),
+                        platform_name,
                         service['name'],
                         user_social_state[user_id]['link'],
                         quantity,
                         total_price
                     )
                     bot.send_message(user_id, summary, parse_mode="Markdown")
+                    
+                    # ✅ الانتقال إلى حالة انتظار التأكيد
                     user_social_state[user_id]['step'] = 'awaiting_confirmation'
                     conn.close()
                     return
@@ -417,6 +428,11 @@ def register_all_handlers(bot):
                     bot.send_message(user_id, t["social_invalid_quantity"])
                     conn.close()
                     return
+            elif current_step == 'awaiting_confirmation':
+                # نطلب من المستخدم تأكيد الطلب إذا كان يرسل رسائل أخرى
+                bot.send_message(user_id, "⚠️ يرجى تأكيد الطلب باستخدام /confirm_social أو إلغاؤه باستخدام /cancel_social")
+                conn.close()
+                return
 
         # التحقق من كلمة المرور
         if not verified:
@@ -442,7 +458,7 @@ def register_all_handlers(bot):
         elif text == t["ff_services"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(t["keys_service"], t["ff_topup"])
-            markup.add(t["back_to_games"])
+            markup.add(t["back_to_games"])  # زر العودة إلى خدمات الألعاب
             bot.send_message(message.chat.id, "🕹️ *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
         elif text == t["shop_now"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
