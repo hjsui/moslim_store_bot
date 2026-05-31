@@ -1,23 +1,20 @@
 # handlers_games.py
-# دوال فري فاير (الجواهر، المفاتيح، التطبيقات)
-
 import telebot
 from telebot import types
 import sqlite3
 from datetime import datetime
-from config import (
-    ADMIN_IDS, CHANNEL_PROOFS, ADMIN_CONTACT,
-    codes_inventory, prices, keys_inventory, apps_inventory
-)
+from config import ADMIN_IDS, CHANNEL_PROOFS, ADMIN_CONTACT, codes_inventory, prices, keys_inventory, apps_inventory
 from database import add_purchase_record
 from utils import is_whitelisted
 from languages import T
-from handlers_payment import purchase_ff_package, purchase_key, send_withdrawal_log
+from handlers_payment import register_payment_handlers  # لا نحتاج لاستيراد الدوال بهذا الشكل، بل سنستقبلها كمعامل
 
-def register_games_handlers(bot, common_funcs):
-    """تسجيل معالجات فري فاير"""
-
+def register_games_handlers(bot, common_funcs, payment_funcs):
+    """تسجيل دوال فري فاير، التطبيقات، المفاتيح"""
     show_games_submenu = common_funcs['show_games_submenu']
+    purchase_ff_package = payment_funcs['purchase_ff_package']
+    purchase_key = payment_funcs['purchase_key']
+    send_withdrawal_log = payment_funcs['send_withdrawal_log']
 
     def show_ff_packages(message, lang, bot_obj=None):
         t = T[lang]
@@ -27,7 +24,7 @@ def register_games_handlers(bot, common_funcs):
                 price = prices[pkg]
                 markup.add(types.InlineKeyboardButton(f"💎 {pkg} {'جوهرة' if lang=='ar' else 'diamonds'} = {price} {'درهم' if lang=='ar' else 'MAD'}", callback_data=f"buy_{pkg}"))
         markup.add(types.InlineKeyboardButton("📢 " + ("شاهد الإثباتات قبل الشراء" if lang=='ar' else "See proofs before buying"), url=CHANNEL_PROOFS))
-        markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
+        markup.add(types.InlineKeyboardButton(T[lang]["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
     def show_keys_products(message, lang, bot_obj=None):
@@ -36,7 +33,7 @@ def register_games_handlers(bot, common_funcs):
         for prod_id, prod_data in keys_inventory.items():
             btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
-        markup.add(types.InlineKeyboardButton(t["back_to_games"], callback_data="back_to_games_menu"))
+        markup.add(types.InlineKeyboardButton(T[lang]["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
     def show_apps_products(message, lang, bot_obj=None):
@@ -47,7 +44,7 @@ def register_games_handlers(bot, common_funcs):
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"app_buy_{app_id}"))
         bot.send_message(message.chat.id, t["choose_app"], reply_markup=markup, parse_mode="Markdown")
 
-    # معالجات شراء الجواهر
+    # باقي دوال الشراء (نفس المحتوى السابق ولكن بدون استيراد مباشر من handlers_payment)
     @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
     def process_purchase(call):
         pkg = call.data.split('_')[1]
@@ -78,7 +75,6 @@ def register_games_handlers(bot, common_funcs):
             purchase_ff_package(user_id, pkg, lang, bot)
             bot.answer_callback_query(call.id)
 
-    # معالجات اختيار مدة المفتاح
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
     def choose_duration(call):
         prod_id = call.data.split('_')[2]
@@ -99,7 +95,6 @@ def register_games_handlers(bot, common_funcs):
         except:
             pass
 
-    # معالجات شراء المفتاح
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
     def handle_key_buy(call):
         parts = call.data.split('_')
@@ -136,7 +131,6 @@ def register_games_handlers(bot, common_funcs):
             purchase_key(user_id, days, lang, bot)
             bot.answer_callback_query(call.id)
 
-    # معالجات شراء التطبيقات
     @bot.callback_query_handler(func=lambda call: call.data.startswith('app_buy_'))
     def process_app_purchase(call):
         app_id = call.data.split('_')[2]
@@ -168,8 +162,7 @@ def register_games_handlers(bot, common_funcs):
                     pass
             bot.answer_callback_query(call.id, "🎉 تم تسليم التطبيق بنجاح!")
         else:
-            from handlers_payment import show_payment_methods
-            show_payment_methods(user_id, 'app', app_id, price, bot)
+            payment_funcs['show_payment_methods'](user_id, 'app', app_id, price, bot)
             bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda call: call.data == "back_to_key_products")
@@ -195,7 +188,6 @@ def register_games_handlers(bot, common_funcs):
         'show_apps_products': show_apps_products
     }
 
-# دالة مساعدة للحصول على اللغة (تجنب مشكلة الاستيراد الدائري)
 def get_lang(user_id):
     import sqlite3
     conn = sqlite3.connect('moslim_store.db')
