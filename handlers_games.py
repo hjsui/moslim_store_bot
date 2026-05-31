@@ -7,16 +7,16 @@ from config import ADMIN_IDS, CHANNEL_PROOFS, ADMIN_CONTACT, codes_inventory, pr
 from database import add_purchase_record
 from utils import is_whitelisted
 from languages import T
-from handlers_payment import register_payment_handlers  # لا نحتاج لاستيراد الدوال بهذا الشكل، بل سنستقبلها كمعامل
 
 def register_games_handlers(bot, common_funcs, payment_funcs):
-    """تسجيل دوال فري فاير، التطبيقات، المفاتيح"""
-    show_games_submenu = common_funcs['show_games_submenu']
+    """تسجيل معالجات فري فاير (الجواهر، المفاتيح، التطبيقات)"""
+    show_games_menu = common_funcs['show_games_menu']
+    show_payment_methods = payment_funcs['show_payment_methods']
     purchase_ff_package = payment_funcs['purchase_ff_package']
     purchase_key = payment_funcs['purchase_key']
     send_withdrawal_log = payment_funcs['send_withdrawal_log']
 
-    def show_ff_packages(message, lang, bot_obj=None):
+    def show_ff_packages(message, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
         for pkg in codes_inventory:
@@ -27,7 +27,7 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
         markup.add(types.InlineKeyboardButton(T[lang]["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["ff_packages_title"], reply_markup=markup, parse_mode="Markdown")
 
-    def show_keys_products(message, lang, bot_obj=None):
+    def show_keys_products(message, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=1)
         for prod_id, prod_data in keys_inventory.items():
@@ -36,7 +36,7 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
         markup.add(types.InlineKeyboardButton(T[lang]["back_to_games"], callback_data="back_to_games_menu"))
         bot.send_message(message.chat.id, t["choose_product"], reply_markup=markup, parse_mode="Markdown")
 
-    def show_apps_products(message, lang, bot_obj=None):
+    def show_apps_products(message, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
         for app_id, app_data in apps_inventory.items():
@@ -44,7 +44,7 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"app_buy_{app_id}"))
         bot.send_message(message.chat.id, t["choose_app"], reply_markup=markup, parse_mode="Markdown")
 
-    # باقي دوال الشراء (نفس المحتوى السابق ولكن بدون استيراد مباشر من handlers_payment)
+    # شراء الجواهر
     @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
     def process_purchase(call):
         pkg = call.data.split('_')[1]
@@ -72,9 +72,10 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
                     pass
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
-            purchase_ff_package(user_id, pkg, lang, bot)
+            purchase_ff_package(user_id, pkg, lang)
             bot.answer_callback_query(call.id)
 
+    # اختيار مدة المفتاح
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
     def choose_duration(call):
         prod_id = call.data.split('_')[2]
@@ -95,6 +96,7 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
         except:
             pass
 
+    # شراء المفتاح
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
     def handle_key_buy(call):
         parts = call.data.split('_')
@@ -128,9 +130,10 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
                     pass
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
-            purchase_key(user_id, days, lang, bot)
+            purchase_key(user_id, days, lang)
             bot.answer_callback_query(call.id)
 
+    # شراء التطبيقات (اشتراكات التطبيقات)
     @bot.callback_query_handler(func=lambda call: call.data.startswith('app_buy_'))
     def process_app_purchase(call):
         app_id = call.data.split('_')[2]
@@ -162,7 +165,7 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
                     pass
             bot.answer_callback_query(call.id, "🎉 تم تسليم التطبيق بنجاح!")
         else:
-            payment_funcs['show_payment_methods'](user_id, 'app', app_id, price, bot)
+            show_payment_methods(user_id, 'app', app_id, price)
             bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda call: call.data == "back_to_key_products")
@@ -179,7 +182,7 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
     @bot.callback_query_handler(func=lambda call: call.data == "back_to_games_menu")
     def back_to_games_menu(call):
         lang = get_lang(call.from_user.id)
-        show_games_submenu(call.message, lang)
+        show_games_menu(call.message, lang)
         bot.answer_callback_query(call.id)
 
     return {
@@ -188,6 +191,7 @@ def register_games_handlers(bot, common_funcs, payment_funcs):
         'show_apps_products': show_apps_products
     }
 
+# دالة مساعدة
 def get_lang(user_id):
     import sqlite3
     conn = sqlite3.connect('moslim_store.db')
