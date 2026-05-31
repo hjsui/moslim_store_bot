@@ -38,11 +38,11 @@ def register_common_handlers(bot):
         markup.add(t["apps_service"], t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
 
-    def show_games_menu(message, lang):
+    def show_games_submenu(message, lang):
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(t["ff_services"])
-        markup.add(t["back_to_sections"])
+        markup.add(t["back_to_games"])
         bot.send_message(message.chat.id, "🎮 *اختر اللعبة:*", reply_markup=markup, parse_mode="Markdown")
 
     # ========== معالج /start ==========
@@ -107,17 +107,15 @@ def register_common_handlers(bot):
         if text == t["services"]:
             show_services_menu(message, lang)
         elif text == t["social_media"]:
-            # ✅ إصلاح: استدعاء دوال السوشل ميديا مباشرة
             from handlers_social import show_social_platforms
             show_social_platforms(user_id, lang, bot)
             conn.close()
             return
         elif text == t["games_services"]:
-            show_games_menu(message, lang)
+            show_games_submenu(message, lang)
         elif text == t["ff_services"]:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(t["keys_service"], t["ff_topup"])
-            # ✅ إصلاح: زر العودة يجب أن يعود إلى قائمة الألعاب
             markup.add(t["back_to_games"])
             bot.send_message(message.chat.id, "🕹️ *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:", reply_markup=markup, parse_mode="Markdown")
         elif text == t["shop_now"]:
@@ -137,10 +135,9 @@ def register_common_handlers(bot):
         elif text == t["back_to_main"]:
             show_main_menu(message, lang)
         elif text == t["back_to_sections"]:
-            # ✅ إصلاح: العودة إلى قائمة الألعاب
-            show_games_menu(message, lang)
+            show_services_menu(message, lang)
         elif text == t["back_to_games"]:
-            show_games_menu(message, lang)
+            show_games_submenu(message, lang)
         elif text == t["proofs"]:
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(t.get("inline_proofs_btn", "📢 قناة الإثباتات"), url=CHANNEL_PROOFS))
@@ -173,5 +170,5 @@ def register_common_handlers(bot):
     return {
         'show_main_menu': show_main_menu,
         'show_services_menu': show_services_menu,
-        'show_games_menu': show_games_menu
+        'show_games_submenu': show_games_submenu
     }
