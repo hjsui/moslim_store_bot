@@ -196,15 +196,12 @@ def get_service_ids_from_structure(platform_id, category_name=None, subcategory_
         return []
     for cat in platform.get('categories', []):
         if category_name is None or cat['name'] == category_name:
-            # إذا كان هناك تصنيف فرعي محدد
             if subcategory_name is not None and 'subcategories' in cat:
                 for sub in cat['subcategories']:
                     if sub['name'] == subcategory_name:
                         return sub.get('service_ids', [])
-            # إذا كان التصنيف الرئيسي له service_ids مباشرة
             elif 'service_ids' in cat:
                 return cat['service_ids']
-            # إذا كان التصنيف الرئيسي يحتوي على تصنيفات فرعية (ولم نحدد تصنيفاً فرعياً)، نجمع كل الخدمات من جميع التصنيفات الفرعية
             elif 'subcategories' in cat:
                 all_ids = []
                 for sub in cat['subcategories']:
