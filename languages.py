@@ -17,10 +17,12 @@ T = {
         "back_to_products": "🔙 العودة للمنتجات",
         "games_services": "🎮 خدمات الألعاب",
         "ff_services": "🕹️ خدمات فري فاير",
-        "back_to_games": "🔙 العودة لخدمات الألعاب",
         "apps_service": "📱 اشتراكات التطبيقات",
         "ff_topup": "💎 شحن جواهر فري فاير",
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
+        
+        # ✅ المفتاح الجديد المطلوب
+        "back_to_games": "🔙 العودة لخدمات الألعاب",
         
         # رسائل الاختيارات العامة
         "choose_product": "🔍 *اختر نوع المنتج:*",
@@ -56,7 +58,7 @@ T = {
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
         "inline_proofs_btn": "📢 قناة الإثباتات",
         
-        # مفاتيح السوشل ميديا (القوائم الهرمية)
+        # مفاتيح السوشل ميديا
         "social_media": "📢 خدمات سوشل ميديا",
         "social_choose_platform": "🌐 *اختر المنصة المطلوبة:*",
         "social_select_category": "📂 *اختر التصنيف:*",
@@ -93,10 +95,12 @@ T = {
         "back_to_products": "🔙 Back to Products",
         "games_services": "🎮 Gaming Services",
         "ff_services": "🕹️ Free Fire Services",
-        "back_to_games": "🔙 Back to Games Services",
         "apps_service": "📱 App Subscriptions",
         "ff_topup": "💎 Free Fire Diamonds Top-up",
         "keys_service": "🔑 Create Hacker Keys",
+        
+        # ✅ المفتاح الجديد المطلوب
+        "back_to_games": "🔙 Back to Games Services",
         
         # General choice messages
         "choose_product": "🔍 *Choose product type:*",
@@ -132,7 +136,7 @@ T = {
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
         
-        # Social media keys (new hierarchical)
+        # Social media messages
         "social_media": "📢 Social Media Services",
         "social_choose_platform": "🌐 *Choose a platform:*",
         "social_select_category": "📂 *Select category:*",
