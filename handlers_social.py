@@ -1,6 +1,4 @@
 # handlers_social.py
-# دوال السوشل ميديا (الهيكل الهرمي، التصنيفات، التدفق)
-
 import telebot
 from telebot import types
 from languages import T
@@ -8,7 +6,6 @@ from database import get_lang, create_order
 from social_api import get_services_by_ids, calculate_price_with_profit
 from social_structure import SOCIAL_STRUCTURE, get_categories_list, get_subcategories_list, get_service_ids_from_structure
 
-# متغير عالمي لحالة المستخدمين (يتم مشاركته بين الملفات)
 user_social_state = {}
 
 def register_social_handlers(bot, common_funcs, payment_funcs):
@@ -16,7 +13,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
     show_main_menu = common_funcs['show_main_menu']
     show_payment_methods = payment_funcs['show_payment_methods']
 
-    def show_social_platforms(user_id, lang, bot_obj=None):
+    def show_social_platforms(user_id, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
         for platform_id, data in SOCIAL_STRUCTURE.items():
@@ -94,7 +91,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         markup.add(types.InlineKeyboardButton("🔙 رجوع", callback_data=back_callback))
         bot.send_message(user_id, f"{data.get('platform_icon', '📢')} *اختر الخدمة:*", reply_markup=markup, parse_mode="Markdown")
 
-    # ========== معالجات كول باك السوشل ميديا ==========
+    # كول باك
     @bot.callback_query_handler(func=lambda call: call.data.startswith('social_platform_'))
     def social_platform_selected(call):
         user_id = call.from_user.id
@@ -215,7 +212,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         show_main_menu(call.message, lang)
         bot.answer_callback_query(call.id)
 
-    # ========== معالجات النصوص (الرابط والكمية) ==========
+    # معالجة النصوص للرابط والكمية
     @bot.message_handler(func=lambda msg: True, content_types=['text'])
     def handle_social_text(message):
         user_id = message.from_user.id
@@ -249,7 +246,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
             except ValueError:
                 bot.send_message(user_id, t["social_invalid_quantity"])
 
-    # ========== أوامر السوشل ميديا ==========
+    # أوامر السوشل ميديا
     @bot.message_handler(commands=['confirm_social'])
     def confirm_social_order(message):
         user_id = message.from_user.id
@@ -268,7 +265,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         order_id = create_order(user_id, 'social', api_payload, float(total))
         del user_social_state[user_id]
         bot.send_message(user_id, f"✅ *تم إنشاء طلب رقم `{order_id}` بنجاح!*\n💰 المبلغ: {total} درهم\n📱 المنصة: {platform_name}\n📌 الخدمة: {service['name']}\n\nاختر طريقة الدفع:", parse_mode="Markdown")
-        show_payment_methods(user_id, 'social', api_payload, total, bot)
+        show_payment_methods(user_id, 'social', api_payload, total)
 
     @bot.message_handler(commands=['cancel_social'])
     def cancel_social_order(message):
@@ -298,7 +295,7 @@ def register_social_handlers(bot, common_funcs, payment_funcs):
         else:
             bot.send_message(message.chat.id, "❌ لم نتمكن من جلب الحالة.")
 
-    # معالج خاص لزر السوشل ميديا في القائمة الرئيسية
+    # معالج خاص لزر السوشل ميديا
     @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)]["social_media"])
     def social_media_button(message):
         user_id = message.from_user.id
