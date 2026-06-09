@@ -15,7 +15,7 @@ SOCIAL_STRUCTURE = {
                         "name_ar": "متابعون تلقائيون",
                         "name_en": "Auto Followers",
                         "icon": "⚡",
-                        "service_ids": [1, 2, 3]
+                        "service_ids": [1, 2, 3]  # replace with your actual service IDs
                     }
                 }
             },
@@ -46,22 +46,20 @@ SOCIAL_STRUCTURE = {
             }
         }
     },
-    # Add your other platforms and categories similarly
+    # Add your other platforms (Facebook, Twitter, YouTube, etc.) in the same format
 }
 
+# Helper functions to get translated names
 def get_platform_name(platform_id, lang):
-    """Return platform name in the given language"""
     data = SOCIAL_STRUCTURE.get(platform_id, {})
     return data.get(f"name_{lang}", platform_id)
 
 def get_category_name(platform_id, category_id, lang):
-    """Return category name in the given language"""
     platform = SOCIAL_STRUCTURE.get(platform_id, {})
     cat = platform.get("categories", {}).get(category_id, {})
     return cat.get(f"name_{lang}", category_id)
 
 def get_subcategory_name(platform_id, category_id, subcategory_id, lang):
-    """Return subcategory name in the given language"""
     platform = SOCIAL_STRUCTURE.get(platform_id, {})
     cat = platform.get("categories", {}).get(category_id, {})
     sub = cat.get("subcategories", {}).get(subcategory_id, {})
@@ -91,7 +89,7 @@ def get_subcategories_list(platform_id, category_id, lang):
     return result
 
 def get_service_ids_from_structure(platform_id, category_id, subcategory_id=None):
-    """Return list of service IDs for a given category or subcategory"""
+    """Return list of service IDs for a given category or subcategory (language independent)"""
     platform = SOCIAL_STRUCTURE.get(platform_id, {})
     cat = platform.get("categories", {}).get(category_id, {})
     if subcategory_id:
