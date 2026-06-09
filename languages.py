@@ -1,9 +1,9 @@
-# languages.py
-# قاموس الترجمة الكامل للمتجر (مع إضافات السوشل ميديا والألعاب)
+# languages.py - Complete bilingual dictionary for Moslim Store
+# Supports Arabic (ar) and English (en) perfectly
 
 T = {
     "ar": {
-        # القائمة الرئيسية والأزرار الأساسية
+        # ========== MAIN MENU & BASIC BUTTONS ==========
         "shop_now": "🛍️ تسوق الآن",
         "services": "🛒 الخدمات",
         "add_balance": "💰 إضافة رصيد",
@@ -21,8 +21,16 @@ T = {
         "ff_topup": "💎 شحن جواهر فري فاير",
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
         "back_to_games": "🔙 العودة لخدمات الألعاب",
-        
-        # رسائل الاختيارات العامة
+        "social_media": "📢 خدمات سوشل ميديا",
+        "proofs_button": "📢 قناة الإثباتات",
+        "contact_manager": "💬 مراسلة المدير",
+        "store_channel": "📢 قناة المتجر",
+        "trust_proofs": "⭐ إثباتات الثقة",
+        "contact_support_charge": "💳 مراسلة الدعم للشحن",
+        "change_payment_button": "🔄 تغيير طريقة الدفع",
+        "send_proof_button": "📸 أرسل الإيصال",
+
+        # ========== GENERAL CHOICE MESSAGES ==========
         "choose_product": "🔍 *اختر نوع المنتج:*",
         "choose_validity": "📅 *اختر المدة:*",
         "choose_app": "🔍 *اختر التطبيق الذي تريده:*",
@@ -37,8 +45,8 @@ T = {
         "app_no_stock": "❌ هذا التطبيق غير متوفر حالياً. جرب تطبيقاً آخر.",
         "choose_section": "🛒 *أقسام المتجر:*\n━━━━━━━━━━━━\nاختر القسم المناسب:",
         "ff_packages_title": "💎 *باقات شحن جواهر فري فاير*\n━━━━━━━━━━━━\n✨ *باقات حصرية بأفضل الأسعار*\n⚡ *توصيل فوري خلال دقائق*\n━━━━━━━━━━━━\n*اختر الباقة المناسبة:*",
-        
-        # رسائل التحقق والتفعيل
+
+        # ========== VERIFICATION & ACTIVATION ==========
         "ask_password": "⚠️ *مـتـجـــر مـسـلـــم* 🛍️\nأدخل كلمة المرور لتفعيل المتجر:",
         "wrong_password": "❌ *كلمة مرور خاطئة!* ❌",
         "verified_success": "✅ *تم التفعيل بنجاح!* ✅\n🎉 مرحباً بك في متجر مسلم",
@@ -55,36 +63,92 @@ T = {
         "welcome_after_lang": "🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨\n⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡\n📢 *آراء العملاء:* [قناتنا مليئة بالإثباتات]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *اضغط /start لتفعيل المتجر* 🔓",
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
         "inline_proofs_btn": "📢 قناة الإثباتات",
-        
-        # مفاتيح السوشل ميديا (القوائم الهرمية)
-        "social_media": "📢 خدمات سوشل ميديا",
+        "no_purchases": "📭 لا توجد مشتريات بعد.",
+
+        # ========== SOCIAL MEDIA KEYS (hierarchical menus) ==========
         "social_choose_platform": "🌐 *اختر المنصة المطلوبة:*",
         "social_select_category": "📂 *اختر التصنيف:*",
         "social_select_subcategory": "📂 *اختر التصنيف الفرعي:*",
-        "social_back_to_categories": "🔙 رجوع للتصنيفات",
-        "social_back_to_subcategories": "🔙 رجوع للتصنيفات الفرعية",
         "social_send_link": "🔗 *أرسل رابط الصفحة أو الملف الشخصي*\n\n📌 *مثال:* `https://www.example.com/username/posts/123456`",
         "social_send_quantity": "🔢 *أرسل الكمية المطلوبة* (رقم فقط):",
         "social_order_summary": "📋 *ملخص الطلب*\n━━━━━━━━━━━━\n📱 المنصة: {}\n📌 الخدمة: {}\n🔗 الرابط: {}\n🔢 الكمية: {}\n💰 السعر الإجمالي: {} درهم\n━━━━━━━━━━━━\n✅ لتأكيد الطلب: /confirm_social\n❌ للإلغاء: /cancel_social",
         "social_invalid_quantity": "❌ يرجى إدخال رقم صحيح للكمية (أكبر من 0).",
-        "social_order_success": "✅ *تم إرسال الطلب بنجاح!*\n🆔 رقم طلب API: `{}`\nيمكنك متابعة الحالة لاحقاً عبر الأمر /social_status <id>",
-        "social_order_failed": "❌ *فشل إرسال الطلب*، يرجى المحاولة لاحقاً أو التواصل مع الدعم.",
-        "social_status_invalid": "⚠️ معرف الطلب غير صالح. استخدم /social_status <api_order_id>",
-        "social_loading": "🔄 جاري تحميل الخدمات...",
         "social_no_services": "⚠️ لا توجد خدمات متاحة حالياً.",
-        "social_no_services_platform": "⚠️ لا توجد خدمات لهذه المنصة.",
-        "social_no_services_category": "⚠️ لا توجد خدمات في هذا التصنيف.",
-        "social_service_selected_error": "الخدمة غير موجودة",
+        "social_service_selected_error": "❌ الخدمة غير موجودة",
         "social_cancel_all": "❌ تم إلغاء جميع العمليات. يمكنك البدء من جديد.",
+        "social_unknown_platform": "⚠️ منصة غير معروفة.",
+        "social_no_categories": "⚠️ لا توجد تصنيفات متاحة.",
+        "social_no_services_in_category": "⚠️ لا توجد خدمات في هذا التصنيف.",
+        "social_api_success": "✅ *تم تنفيذ طلبك بنجاح!*\n🆔 رقم طلب API: `{}`\nيمكنك متابعة الحالة عبر /social_status {}",
+        "social_api_fail": "❌ *فشل تنفيذ الطلب*\nالسبب: {}\nتم إبلاغ المدير.",
+        "social_invalid_data": "❌ بيانات الطلب غير صالحة. تم إبلاغ المدير.",
+        "social_internal_error": "❌ حدث خطأ داخلي. تم إبلاغ المدير.",
+        "social_cancelled": "❌ تم إلغاء طلب السوشل ميديا.",
+        "social_cancelled_all": "❌ تم إلغاء جميع العمليات. يمكنك البدء من جديد.",
+        "social_no_pending_order": "⚠️ لا يوجد طلب قيد الانتظار للتأكيد. ابدأ باختيار خدمة من قسم السوشل ميديا.",
+        "social_missing_data": "⚠️ البيانات ناقصة. يرجى إعادة اختيار الخدمة.",
+        "social_order_created": "✅ *تم إنشاء طلب رقم `{}` بنجاح!*\n💰 المبلغ المطلوب: {} درهم.\n📱 المنصة: {}\n📌 الخدمة: {}\n\nالرجاء اختيار طريقة الدفع من القائمة أدناه.",
+        "social_status_usage": "❗ الاستخدام: /social_status <api_order_id>",
+        "social_status_invalid_id": "❌ معرف الطلب يجب أن يكون رقماً.",
+        "social_status_title": "حالة الطلب",
+        "status_label": "الحالة",
+        "remains_label": "المتبقي",
+        "start_count_label": "بدء العد",
+        "social_status_fail": "❌ لم نتمكن من جلب حالة الطلب.",
+        "social_confirm_prompt": "⚠️ يرجى تأكيد الطلب باستخدام /confirm_social أو إلغاؤه باستخدام /cancel_social",
+        "social_quantity_error": "❌ حدث خطأ أثناء معالجة الكمية. حاول مرة أخرى.",
+        "back_to_platforms_btn": "🔙 رجوع للمنصات",
+        "back_to_categories_btn": "🔙 رجوع للتصنيفات",
+        "back_btn": "🔙 رجوع",
+        "choose_service": "اختر الخدمة:",
+        "platform_label": "منصة:",
+        "back_to_main_btn": "🔙 العودة للقائمة الرئيسية",
+
+        # ========== GAMES & FF SPECIFIC ==========
+        "choose_game": "🎮 *اختر اللعبة:*",
+        "diamonds": "جوهرة",
+        "mad_currency": "درهم",
+        "see_proofs_before_buy": "شاهد الإثباتات قبل الشراء",
+        "ff_menu_title": "🕹️ *خدمات فري فاير:*\n━━━━━━━━━━━━\nاختر الخدمة:",
+        "ff_product_name": "جواهر فري فاير ({} جوهرة)",
+        "key_product_name": "مفتاح DRIP CLIENT - {} يوم",
+        "app_default": "تطبيق",
+        "social_product_name": "خدمة سوشل ميديا",
+        "unknown_product": "منتج غير معروف",
+        "duration_label": "المدة",
+        "days_label": "يوم",
+        "update_channel_label": "قناة التحديثات",
+        "app_delivered_success": "🎉 تم تسليم التطبيق بنجاح!",
+
+        # ========== PAYMENT & ADMIN ==========
+        "payment_method_label": "طريقة الدفع",
+        "amount_label": "المبلغ",
+        "order_id_label": "رقم الطلب",
+        "payment_instruction": "بعد التحويل، أرسل صورة الإيصال بالضغط على الزر أدناه.",
+        "cannot_change_payment": "لا يمكن تغيير طريقة الدفع الآن",
+        "payment_changed": "✅ يمكنك اختيار طريقة دفع جديدة",
+        "proof_not_photo": "❌ يرجى إرسال صورة وليس نصاً. أعد المحاولة.",
+        "order_error": "❌ حدث خطأ في الطلب.",
+        "new_payment_request": "طلب دفع جديد",
+        "user_label": "المستخدم",
+        "product_label": "المنتج",
+        "payment_proof_label": "إثبات الدفع",
+        "accept_order": "✅ قبول الطلب",
+        "reject_order": "❌ رفض الطلب",
+        "proof_received_admin": "📸 تم استلام إثبات الدفع! سيتم مراجعته من قبل الإدارة قريباً.",
+        "not_allowed": "غير مسموح",
+        "order_accepted_alert": "✅ تم قبول الطلب",
+        "order_rejected_alert": "❌ تم رفض الطلب",
+        "product_not_found": "❌ المنتج غير موجود",
     },
-    
+
     "en": {
-        # Main menu and basic buttons
+        # ========== MAIN MENU & BASIC BUTTONS ==========
         "shop_now": "🛍️ Shop Now",
         "services": "🛒 Services",
         "add_balance": "💰 Add Balance",
         "profile": "👤 Profile",
-        "how_to_use": "📖 How to use",
+        "how_to_use": "📖 How to Use",
         "support": "📞 Support",
         "proofs": "📢 Trust Proofs",
         "back_to_main": "🔙 Back to Main Menu",
@@ -97,8 +161,16 @@ T = {
         "ff_topup": "💎 Free Fire Diamonds Top-up",
         "keys_service": "🔑 Create Hacker Keys",
         "back_to_games": "🔙 Back to Games Services",
-        
-        # General choice messages
+        "social_media": "📢 Social Media Services",
+        "proofs_button": "📢 Proofs Channel",
+        "contact_manager": "💬 Contact Manager",
+        "store_channel": "📢 Store Channel",
+        "trust_proofs": "⭐ Trust Proofs",
+        "contact_support_charge": "💳 Contact Support for Payment",
+        "change_payment_button": "🔄 Change Payment Method",
+        "send_proof_button": "📸 Send Receipt",
+
+        # ========== GENERAL CHOICE MESSAGES ==========
         "choose_product": "🔍 *Choose product type:*",
         "choose_validity": "📅 *Choose duration:*",
         "choose_app": "🔍 *Choose the app you want:*",
@@ -113,8 +185,8 @@ T = {
         "app_no_stock": "❌ This app is currently unavailable. Try another app.",
         "choose_section": "🛒 *Store Sections:*\n━━━━━━━━━━━━\nChoose the appropriate section:",
         "ff_packages_title": "💎 *Free Fire Diamonds Packages*\n━━━━━━━━━━━━\n✨ *Exclusive packages at best prices*\n⚡ *Instant delivery in minutes*\n━━━━━━━━━━━━\n*Choose your package:*",
-        
-        # Verification and activation messages
+
+        # ========== VERIFICATION & ACTIVATION ==========
         "ask_password": "⚠️ *MOSLIM STORE* 🛍️\nEnter password to activate the store:",
         "wrong_password": "❌ *Wrong password!* ❌",
         "verified_success": "✅ *Activated successfully!* ✅\n🎉 Welcome to Moslim Store",
@@ -131,26 +203,82 @@ T = {
         "welcome_after_lang": "🛍️ *MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *Digital services - Instant top-up - Subscriptions* ✨\n⚡ *Speed - Trust - Unbeatable prices* ⚡\n📢 *Customer reviews:* [Our channel is full of proofs]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *Press /start to activate the store* 🔓",
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
-        
-        # Social media keys
-        "social_media": "📢 Social Media Services",
+        "no_purchases": "📭 No purchases yet.",
+
+        # ========== SOCIAL MEDIA KEYS ==========
         "social_choose_platform": "🌐 *Choose a platform:*",
         "social_select_category": "📂 *Select category:*",
         "social_select_subcategory": "📂 *Select subcategory:*",
-        "social_back_to_categories": "🔙 Back to categories",
-        "social_back_to_subcategories": "🔙 Back to subcategories",
         "social_send_link": "🔗 *Send your profile/page link*\n\n📌 *Example:* `https://www.example.com/username/posts/123456`",
         "social_send_quantity": "🔢 *Send quantity (number only):*",
         "social_order_summary": "📋 *Order Summary*\n━━━━━━━━━━━━\n📱 Platform: {}\n📌 Service: {}\n🔗 Link: {}\n🔢 Quantity: {}\n💰 Total price: {} MAD\n━━━━━━━━━━━━\n✅ Confirm: /confirm_social\n❌ Cancel: /cancel_social",
         "social_invalid_quantity": "❌ Please enter a valid quantity (greater than 0).",
-        "social_order_success": "✅ *Order placed successfully!*\n🆔 API Order ID: `{}`\nCheck status later using /social_status <id>",
-        "social_order_failed": "❌ *Order failed*. Try again later or contact support.",
-        "social_status_invalid": "⚠️ Invalid order ID. Use /social_status <api_order_id>",
-        "social_loading": "🔄 Loading services...",
         "social_no_services": "⚠️ No services available.",
-        "social_no_services_platform": "⚠️ No services for this platform.",
-        "social_no_services_category": "⚠️ No services in this category.",
-        "social_service_selected_error": "Service not found",
+        "social_service_selected_error": "❌ Service not found",
         "social_cancel_all": "❌ All operations canceled. You can start over.",
+        "social_unknown_platform": "⚠️ Unknown platform.",
+        "social_no_categories": "⚠️ No categories available.",
+        "social_no_services_in_category": "⚠️ No services in this category.",
+        "social_api_success": "✅ *Order placed successfully!*\n🆔 API Order ID: `{}`\nCheck status later using /social_status {}",
+        "social_api_fail": "❌ *Order failed*\nReason: {}\nAdmin notified.",
+        "social_invalid_data": "❌ Invalid order data. Admin notified.",
+        "social_internal_error": "❌ Internal error. Admin notified.",
+        "social_cancelled": "❌ Social media order cancelled.",
+        "social_cancelled_all": "❌ All operations canceled. You can start over.",
+        "social_no_pending_order": "⚠️ No pending order to confirm. Start by selecting a service from social media section.",
+        "social_missing_data": "⚠️ Missing data. Please select service again.",
+        "social_order_created": "✅ *Order #`{}` created!*\n💰 Amount: {} MAD.\n📱 Platform: {}\n📌 Service: {}\n\nPlease choose a payment method below.",
+        "social_status_usage": "❗ Usage: /social_status <api_order_id>",
+        "social_status_invalid_id": "❌ Order ID must be a number.",
+        "social_status_title": "Order status",
+        "status_label": "Status",
+        "remains_label": "Remaining",
+        "start_count_label": "Start count",
+        "social_status_fail": "❌ Could not fetch order status.",
+        "social_confirm_prompt": "⚠️ Please confirm the order using /confirm_social or cancel using /cancel_social",
+        "social_quantity_error": "❌ Error processing quantity. Please try again.",
+        "back_to_platforms_btn": "🔙 Back to platforms",
+        "back_to_categories_btn": "🔙 Back to categories",
+        "back_btn": "🔙 Back",
+        "choose_service": "Choose service:",
+        "platform_label": "Platform:",
+        "back_to_main_btn": "🔙 Back to main menu",
+
+        # ========== GAMES & FF SPECIFIC ==========
+        "choose_game": "🎮 *Choose game:*",
+        "diamonds": "diamonds",
+        "mad_currency": "MAD",
+        "see_proofs_before_buy": "See proofs before buying",
+        "ff_menu_title": "🕹️ *Free Fire services:*\n━━━━━━━━━━━━\nChoose service:",
+        "ff_product_name": "Free Fire diamonds ({} gems)",
+        "key_product_name": "DRIP CLIENT key - {} days",
+        "app_default": "App",
+        "social_product_name": "Social media service",
+        "unknown_product": "Unknown product",
+        "duration_label": "Duration",
+        "days_label": "days",
+        "update_channel_label": "Update channel",
+        "app_delivered_success": "🎉 App delivered successfully!",
+
+        # ========== PAYMENT & ADMIN ==========
+        "payment_method_label": "Payment method",
+        "amount_label": "Amount",
+        "order_id_label": "Order ID",
+        "payment_instruction": "After transfer, send the receipt by pressing the button below.",
+        "cannot_change_payment": "Cannot change payment method now",
+        "payment_changed": "✅ You can choose a new payment method",
+        "proof_not_photo": "❌ Please send a photo, not text. Try again.",
+        "order_error": "❌ Order error.",
+        "new_payment_request": "New payment request",
+        "user_label": "User",
+        "product_label": "Product",
+        "payment_proof_label": "Payment proof",
+        "accept_order": "✅ Accept order",
+        "reject_order": "❌ Reject order",
+        "proof_received_admin": "📸 Payment proof received! It will be reviewed by admin soon.",
+        "not_allowed": "Not allowed",
+        "order_accepted_alert": "✅ Order accepted",
+        "order_rejected_alert": "❌ Order rejected",
+        "product_not_found": "❌ Product not found",
     }
 }
