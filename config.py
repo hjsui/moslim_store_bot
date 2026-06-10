@@ -68,3 +68,7 @@ apps_inventory = {
 SOCIAL_API_URL = "https://xfollowr.com/api/v2"
 SOCIAL_API_KEY = "cae8f1e5da7b2c5db19d5c44a3e55c81"
 SOCIAL_PROFIT_PERCENT = 25   # نسبة الربح 25%
+
+# ------------------- إعدادات العملة -------------------
+DEFAULT_CURRENCY = 'mad'      # العملة الافتراضية (mad أو usd)
+USD_TO_MAD = 10.0             # سعر صرف الدولار إلى الدرهم (1 دولار = 10 دراهم)
