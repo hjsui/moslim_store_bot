@@ -1,9 +1,9 @@
 # languages.py
-# قاموس الترجمة الكامل للمتجر (مع إضافات السوشل ميديا والألعاب واللغة والعملة)
+# قاموس الترجمة الكامل – نسخة نهائية مستقرة
 
 T = {
     "ar": {
-        # القائمة الرئيسية والأزرار الأساسية
+        # القائمة الرئيسية
         "shop_now": "🛍️ تسوق الآن",
         "services": "🛒 الخدمات",
         "add_balance": "💰 إضافة رصيد",
@@ -21,8 +21,8 @@ T = {
         "ff_topup": "💎 شحن جواهر فري فاير",
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
         "back_to_games": "🔙 العودة لخدمات الألعاب",
-        
-        # ✅ أزرار تغيير اللغة والعملة (ستظهر كقوائم)
+
+        # اللغة والعملة
         "change_language": "🌐 اللغة",
         "change_currency": "💱 العملة",
         "select_language": "🌐 *اختر اللغة:*",
@@ -34,8 +34,8 @@ T = {
         "language_changed": "✅ تم تغيير اللغة بنجاح.",
         "currency_changed": "✅ تم تغيير العملة إلى {}.",
         "current_currency": "العملة الحالية: {}",
-        
-        # رسائل الاختيارات العامة
+
+        # رسائل عامة
         "choose_product": "🔍 *اختر نوع المنتج:*",
         "choose_validity": "📅 *اختر المدة:*",
         "choose_app": "🔍 *اختر التطبيق الذي تريده:*",
@@ -50,8 +50,8 @@ T = {
         "app_no_stock": "❌ هذا التطبيق غير متوفر حالياً. جرب تطبيقاً آخر.",
         "choose_section": "🛒 *أقسام المتجر:*\n━━━━━━━━━━━━\nاختر القسم المناسب:",
         "ff_packages_title": "💎 *باقات شحن جواهر فري فاير*\n━━━━━━━━━━━━\n✨ *باقات حصرية بأفضل الأسعار*\n⚡ *توصيل فوري خلال دقائق*\n━━━━━━━━━━━━\n*اختر الباقة المناسبة:*",
-        
-        # رسائل التحقق والتفعيل
+
+        # التحقق والتفعيل
         "ask_password": "⚠️ *مـتـجـــر مـسـلـــم* 🛍️\nأدخل كلمة المرور لتفعيل المتجر:",
         "wrong_password": "❌ *كلمة مرور خاطئة!* ❌",
         "verified_success": "✅ *تم التفعيل بنجاح!* ✅\n🎉 مرحباً بك في متجر مسلم",
@@ -68,8 +68,8 @@ T = {
         "welcome_after_lang": "🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨\n⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡\n📢 *آراء العملاء:* [قناتنا مليئة بالإثباتات]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *اضغط /start لتفعيل المتجر* 🔓",
         "default_reply": "🤖 *مرحباً!*\n━━━━━━━━━━━━\nاستخدم الأزرار بالأسفل للتنقل في المتجر.\n📢 وللتأكد من مصداقيتنا: [شاهد الإثباتات]({})",
         "inline_proofs_btn": "📢 قناة الإثباتات",
-        
-        # مفاتيح السوشل ميديا (القوائم الهرمية)
+
+        # السوشل ميديا
         "social_media": "📢 خدمات سوشل ميديا",
         "social_choose_platform": "🌐 *اختر المنصة المطلوبة:*",
         "social_select_category": "📂 *اختر التصنيف:*",
@@ -89,13 +89,19 @@ T = {
         "social_no_services_category": "⚠️ لا توجد خدمات في هذا التصنيف.",
         "social_service_selected_error": "الخدمة غير موجودة",
         "social_cancel_all": "❌ تم إلغاء جميع العمليات. يمكنك البدء من جديد.",
-        
-        # ✅ إضافات لبعض العبارات التي كانت مفقودة في العربية (اختياري)
-        "payment_instructions": "⚠️ بعد التحويل، أرسل صورة الإيصال بالضغط على الزر أدناه.",
+
+        # الدفع
         "payment_method_label": "📌 طريقة الدفع:",
+        "amount": "💰 المبلغ:",
+        "order_id_label": "🆔 رقم الطلب:",
+        "payment_instructions": "⚠️ بعد التحويل، أرسل صورة الإيصال بالضغط على الزر أدناه.",
+        "choose_game": "🎮 *اختر اللعبة:*",
+        "choose_service": "🕹️ *اختر الخدمة:*",
+        "social_select_service": "🌟 *اختر الخدمة المناسبة:*"
     },
-    
+
     "en": {
+        # Main menu
         "shop_now": "🛍️ Shop Now",
         "services": "🛒 Services",
         "add_balance": "💰 Add Balance",
@@ -113,7 +119,8 @@ T = {
         "ff_topup": "💎 Free Fire Diamonds Top-up",
         "keys_service": "🔑 Create Hacker Keys",
         "back_to_games": "🔙 Back to Games Services",
-        
+
+        # Language & Currency
         "change_language": "🌐 Language",
         "change_currency": "💱 Currency",
         "select_language": "🌐 *Select language:*",
@@ -125,7 +132,8 @@ T = {
         "language_changed": "✅ Language changed successfully.",
         "currency_changed": "✅ Currency changed to {}.",
         "current_currency": "Current currency: {}",
-        
+
+        # General messages
         "choose_product": "🔍 *Choose product type:*",
         "choose_validity": "📅 *Choose duration:*",
         "choose_app": "🔍 *Choose the app you want:*",
@@ -140,7 +148,8 @@ T = {
         "app_no_stock": "❌ This app is currently unavailable. Try another app.",
         "choose_section": "🛒 *Store Sections:*\n━━━━━━━━━━━━\nChoose the appropriate section:",
         "ff_packages_title": "💎 *Free Fire Diamonds Packages*\n━━━━━━━━━━━━\n✨ *Exclusive packages at best prices*\n⚡ *Instant delivery in minutes*\n━━━━━━━━━━━━\n*Choose your package:*",
-        
+
+        # Verification
         "ask_password": "⚠️ *MOSLIM STORE* 🛍️\nEnter password to activate the store:",
         "wrong_password": "❌ *Wrong password!* ❌",
         "verified_success": "✅ *Activated successfully!* ✅\n🎉 Welcome to Moslim Store",
@@ -157,7 +166,8 @@ T = {
         "welcome_after_lang": "🛍️ *MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *Digital services - Instant top-up - Subscriptions* ✨\n⚡ *Speed - Trust - Unbeatable prices* ⚡\n📢 *Customer reviews:* [Our channel is full of proofs]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *Press /start to activate the store* 🔓",
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
-        
+
+        # Social media
         "social_media": "📢 Social Media Services",
         "social_choose_platform": "🌐 *Choose a platform:*",
         "social_select_category": "📂 *Select category:*",
@@ -177,13 +187,14 @@ T = {
         "social_no_services_category": "⚠️ No services in this category.",
         "social_service_selected_error": "Service not found",
         "social_cancel_all": "❌ All operations canceled. You can start over.",
-        
-        # ✅ الترجمات الإنجليزية المفقودة
-        "choose_game": "🎮 *Choose the game:*",
-        "choose_service": "🕹️ *Choose the service:*",
-        "payment_instructions": "⚠️ After transfer, send the receipt by pressing the button below.",
+
+        # Payment
         "payment_method_label": "📌 Payment method:",
         "amount": "💰 Amount:",
         "order_id_label": "🆔 Order ID:",
+        "payment_instructions": "⚠️ After transfer, send the receipt by pressing the button below.",
+        "choose_game": "🎮 *Choose the game:*",
+        "choose_service": "🕹️ *Choose the service:*",
+        "social_select_service": "🌟 *Select the appropriate service:*"
     }
 }
