@@ -1,5 +1,5 @@
 # languages.py
-# قاموس الترجمة الكامل للمتجر (مع إضافات السوشل ميديا والألعاب)
+# قاموس الترجمة الكامل للمتجر (مع إضافات السوشل ميديا والألعاب واللغة والعملة)
 
 T = {
     "ar": {
@@ -22,11 +22,20 @@ T = {
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
         "back_to_games": "🔙 العودة لخدمات الألعاب",
         
+        # ✅ أزرار جديدة لتغيير اللغة والعملة
+        "change_language": "🌐 اللغة",
+        "change_currency": "💱 العملة",
+        "language_changed": "✅ تم تغيير اللغة بنجاح.",
+        "currency_changed": "✅ تم تغيير العملة إلى {}.",
+        "currency_mad": "الدرهم المغربي (MAD)",
+        "currency_usd": "الدولار الأمريكي (USD)",
+        "current_currency": "العملة الحالية: {}",
+        
         # رسائل الاختيارات العامة
         "choose_product": "🔍 *اختر نوع المنتج:*",
         "choose_validity": "📅 *اختر المدة:*",
         "choose_app": "🔍 *اختر التطبيق الذي تريده:*",
-        "choose_payment": "💳 *اختر طريقة الدفع:*",
+        "choose_payment": "💳 *اختر طريقة الدفع:* (المبلغ: {} {})",
         "ask_proof": "📸 *أرسل صورة إثبات الدفع الآن*",
         "proof_received": "🔄 جاري معالجة طلبك... يرجى الانتظار.",
         "order_accepted": "✅ *تم قبول طلبك بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n💰 السعر: {} درهم\n🔗 رابط التحميل: [اضغط هنا]({})\n📢 لمتابعة التحديثات: [انضم للقناة]({})\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
@@ -65,7 +74,7 @@ T = {
         "social_back_to_subcategories": "🔙 رجوع للتصنيفات الفرعية",
         "social_send_link": "🔗 *أرسل رابط الصفحة أو الملف الشخصي*\n\n📌 *مثال:* `https://www.example.com/username/posts/123456`",
         "social_send_quantity": "🔢 *أرسل الكمية المطلوبة* (رقم فقط):",
-        "social_order_summary": "📋 *ملخص الطلب*\n━━━━━━━━━━━━\n📱 المنصة: {}\n📌 الخدمة: {}\n🔗 الرابط: {}\n🔢 الكمية: {}\n💰 السعر الإجمالي: {} درهم\n━━━━━━━━━━━━\n✅ لتأكيد الطلب: /confirm_social\n❌ للإلغاء: /cancel_social",
+        "social_order_summary": "📋 *ملخص الطلب*\n━━━━━━━━━━━━\n📱 المنصة: {}\n📌 الخدمة: {}\n🔗 الرابط: {}\n🔢 الكمية: {}\n💰 السعر الإجمالي: {} {}\n━━━━━━━━━━━━\n✅ لتأكيد الطلب: /confirm_social\n❌ للإلغاء: /cancel_social",
         "social_invalid_quantity": "❌ يرجى إدخال رقم صحيح للكمية (أكبر من 0).",
         "social_order_success": "✅ *تم إرسال الطلب بنجاح!*\n🆔 رقم طلب API: `{}`\nيمكنك متابعة الحالة لاحقاً عبر الأمر /social_status <id>",
         "social_order_failed": "❌ *فشل إرسال الطلب*، يرجى المحاولة لاحقاً أو التواصل مع الدعم.",
@@ -98,11 +107,20 @@ T = {
         "keys_service": "🔑 Create Hacker Keys",
         "back_to_games": "🔙 Back to Games Services",
         
+        # ✅ New buttons for language and currency
+        "change_language": "🌐 Language",
+        "change_currency": "💱 Currency",
+        "language_changed": "✅ Language changed successfully.",
+        "currency_changed": "✅ Currency changed to {}.",
+        "currency_mad": "Moroccan Dirham (MAD)",
+        "currency_usd": "US Dollar (USD)",
+        "current_currency": "Current currency: {}",
+        
         # General choice messages
         "choose_product": "🔍 *Choose product type:*",
         "choose_validity": "📅 *Choose duration:*",
         "choose_app": "🔍 *Choose the app you want:*",
-        "choose_payment": "💳 *Choose payment method:*",
+        "choose_payment": "💳 *Choose payment method:* (Amount: {} {})",
         "ask_proof": "📸 *Send your payment proof screenshot now*",
         "proof_received": "🔄 Processing your order... Please wait.",
         "order_accepted": "✅ *Your order has been accepted!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n💰 Price: {} MAD\n🔗 Download link: [Click here]({})\n📢 For updates: [Join channel]({})\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See proofs: [Click here]({})",
@@ -141,7 +159,7 @@ T = {
         "social_back_to_subcategories": "🔙 Back to subcategories",
         "social_send_link": "🔗 *Send your profile/page link*\n\n📌 *Example:* `https://www.example.com/username/posts/123456`",
         "social_send_quantity": "🔢 *Send quantity (number only):*",
-        "social_order_summary": "📋 *Order Summary*\n━━━━━━━━━━━━\n📱 Platform: {}\n📌 Service: {}\n🔗 Link: {}\n🔢 Quantity: {}\n💰 Total price: {} MAD\n━━━━━━━━━━━━\n✅ Confirm: /confirm_social\n❌ Cancel: /cancel_social",
+        "social_order_summary": "📋 *Order Summary*\n━━━━━━━━━━━━\n📱 Platform: {}\n📌 Service: {}\n🔗 Link: {}\n🔢 Quantity: {}\n💰 Total price: {} {}\n━━━━━━━━━━━━\n✅ Confirm: /confirm_social\n❌ Cancel: /cancel_social",
         "social_invalid_quantity": "❌ Please enter a valid quantity (greater than 0).",
         "social_order_success": "✅ *Order placed successfully!*\n🆔 API Order ID: `{}`\nCheck status later using /social_status <id>",
         "social_order_failed": "❌ *Order failed*. Try again later or contact support.",
