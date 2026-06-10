@@ -22,13 +22,17 @@ T = {
         "keys_service": "🔑 إنشاء مفاتيح الهكرات",
         "back_to_games": "🔙 العودة لخدمات الألعاب",
         
-        # ✅ أزرار جديدة لتغيير اللغة والعملة
+        # ✅ أزرار تغيير اللغة والعملة (ستظهر كقوائم)
         "change_language": "🌐 اللغة",
         "change_currency": "💱 العملة",
-        "language_changed": "✅ تم تغيير اللغة بنجاح.",
-        "currency_changed": "✅ تم تغيير العملة إلى {}.",
+        "select_language": "🌐 *اختر اللغة:*",
+        "select_currency": "💱 *اختر العملة:*",
+        "language_arabic": "🇲🇦 العربية",
+        "language_english": "🇬🇧 English",
         "currency_mad": "الدرهم المغربي (MAD)",
         "currency_usd": "الدولار الأمريكي (USD)",
+        "language_changed": "✅ تم تغيير اللغة بنجاح.",
+        "currency_changed": "✅ تم تغيير العملة إلى {}.",
         "current_currency": "العملة الحالية: {}",
         
         # رسائل الاختيارات العامة
@@ -38,10 +42,10 @@ T = {
         "choose_payment": "💳 *اختر طريقة الدفع:* (المبلغ: {} {})",
         "ask_proof": "📸 *أرسل صورة إثبات الدفع الآن*",
         "proof_received": "🔄 جاري معالجة طلبك... يرجى الانتظار.",
-        "order_accepted": "✅ *تم قبول طلبك بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n💰 السعر: {} درهم\n🔗 رابط التحميل: [اضغط هنا]({})\n📢 لمتابعة التحديثات: [انضم للقناة]({})\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
+        "order_accepted": "✅ *تم قبول طلبك بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n💰 السعر: {} {}\n🔗 رابط التحميل: [اضغط هنا]({})\n📢 لمتابعة التحديثات: [انضم للقناة]({})\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "order_rejected": "❌ *عذراً، تم رفض طلبك* ❌\n━━━━━━━━━━━━\n📦 المنتج: {}\n⚠️ يرجى التحقق من صحة إثبات الدفع وإعادة المحاولة.\n━━━━━━━━━━━━\n💡 يمكنك الضغط على الزر أدناه لتغيير طريقة الدفع.",
         "already_paid": "⚠️ لديك طلب قيد المراجعة بالفعل. يرجى الانتظار أو التواصل مع الدعم.",
-        "keys_purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n🗓️ المدة: {} يوم\n💰 السعر: {} 💰\n🔑 مفتاحك: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
+        "keys_purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n📦 المنتج: {}\n🗓️ المدة: {} يوم\n💰 السعر: {} {}\n🔑 مفتاحك: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "no_stock": "❌ عذراً، لا توجد مفاتيح متوفرة لهذه المدة حالياً.",
         "app_no_stock": "❌ هذا التطبيق غير متوفر حالياً. جرب تطبيقاً آخر.",
         "choose_section": "🛒 *أقسام المتجر:*\n━━━━━━━━━━━━\nاختر القسم المناسب:",
@@ -58,7 +62,7 @@ T = {
         "add_balance_text": "💰 *إضافة رصيد*\n━━━━━━━━━━━━\n💵 *طرق الدفع المتاحة:*\n• CIH BANK\n• Binance (USDT)\n• PayPal\n• واتساب\n\n📌 *خطوات الشحن:*\n1️⃣ تواصل مع الدعم\n2️⃣ أرسل المبلغ المطلوب\n3️⃣ استلم الرصيد فوراً\n\n✨ *خدمة آمنة وسريعة*",
         "how_to_use_text": "📖 *طريقة الاستخدام*\n━━━━━━━━━━━━\n📌 *خطوات الشراء:*\n1️⃣ اختر الباقة المناسبة\n2️⃣ اضغط على زر الشراء\n3️⃣ اختر طريقة الدفع\n4️⃣ أرسل صورة الإثبات\n5️⃣ بعد الموافقة، استلم منتجك\n\n⚡ *شحن فوري - خدمة 24 ساعة*\n🔒 *ضمان استرجاع الأموال في حال وجود مشكلة*",
         "proofs_text": "📢 *قناة إثباتات الثقة والمصداقية*\n━━━━━━━━━━━━\n🔍 *شاهد بنفسك آراء العملاء السابقين:*\n✅ أكثر من 100+ عملية موثقة\n⭐ تقييم العملاء: ممتاز جداً\n\n[📢 اضغط هنا لمشاهدة الإثباتات]({})",
-        "purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n💎 الكمية: {} جوهرة\n💰 السعر: {} درهم\n🔑 كود الشحن: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
+        "purchase_success": "✅ *تم الشراء بنجاح!* ✅\n━━━━━━━━━━━━\n💎 الكمية: {} جوهرة\n💰 السعر: {} {}\n🔑 كود الشحن: `{}`\n━━━━━━━━━━━━\n📞 للاستفسار: [@MOSLIM_SHOP]({})\n📢 لمشاهدة إثباتاتنا: [اضغط هنا]({})",
         "out_of_stock": "❌ عذراً، هذه الباقة غير متوفرة حالياً. جرب باقة أخرى!",
         "confirm_purchase": "🎉 تم الشراء بنجاح! استلم الكود أعلاه",
         "welcome_after_lang": "🛍️ *مـتـجـــر مـسـلـــم | MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *خدمات رقمية - شحن فوري - اشتراكات* ✨\n⚡ *سرعة - ثقة - أسعار لا تقبل المنافسة* ⚡\n📢 *آراء العملاء:* [قناتنا مليئة بالإثباتات]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *اضغط /start لتفعيل المتجر* 🔓",
@@ -85,10 +89,13 @@ T = {
         "social_no_services_category": "⚠️ لا توجد خدمات في هذا التصنيف.",
         "social_service_selected_error": "الخدمة غير موجودة",
         "social_cancel_all": "❌ تم إلغاء جميع العمليات. يمكنك البدء من جديد.",
+        
+        # ✅ إضافات لبعض العبارات التي كانت مفقودة في العربية (اختياري)
+        "payment_instructions": "⚠️ بعد التحويل، أرسل صورة الإيصال بالضغط على الزر أدناه.",
+        "payment_method_label": "📌 طريقة الدفع:",
     },
     
     "en": {
-        # Main menu and basic buttons
         "shop_now": "🛍️ Shop Now",
         "services": "🛒 Services",
         "add_balance": "💰 Add Balance",
@@ -107,32 +114,33 @@ T = {
         "keys_service": "🔑 Create Hacker Keys",
         "back_to_games": "🔙 Back to Games Services",
         
-        # ✅ New buttons for language and currency
         "change_language": "🌐 Language",
         "change_currency": "💱 Currency",
-        "language_changed": "✅ Language changed successfully.",
-        "currency_changed": "✅ Currency changed to {}.",
+        "select_language": "🌐 *Select language:*",
+        "select_currency": "💱 *Select currency:*",
+        "language_arabic": "🇲🇦 Arabic",
+        "language_english": "🇬🇧 English",
         "currency_mad": "Moroccan Dirham (MAD)",
         "currency_usd": "US Dollar (USD)",
+        "language_changed": "✅ Language changed successfully.",
+        "currency_changed": "✅ Currency changed to {}.",
         "current_currency": "Current currency: {}",
         
-        # General choice messages
         "choose_product": "🔍 *Choose product type:*",
         "choose_validity": "📅 *Choose duration:*",
         "choose_app": "🔍 *Choose the app you want:*",
         "choose_payment": "💳 *Choose payment method:* (Amount: {} {})",
         "ask_proof": "📸 *Send your payment proof screenshot now*",
         "proof_received": "🔄 Processing your order... Please wait.",
-        "order_accepted": "✅ *Your order has been accepted!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n💰 Price: {} MAD\n🔗 Download link: [Click here]({})\n📢 For updates: [Join channel]({})\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See proofs: [Click here]({})",
+        "order_accepted": "✅ *Your order has been accepted!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n💰 Price: {} {}\n🔗 Download link: [Click here]({})\n📢 For updates: [Join channel]({})\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See proofs: [Click here]({})",
         "order_rejected": "❌ *Sorry, your order has been rejected* ❌\n━━━━━━━━━━━━\n📦 Product: {}\n⚠️ Please check your payment proof and try again.\n━━━━━━━━━━━━\n💡 Press the button below to change payment method.",
         "already_paid": "⚠️ You have a pending order. Please wait or contact support.",
-        "keys_purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n🗓️ Duration: {} days\n💰 Price: {} 💰\n🔑 Your key: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See our proofs: [Click here]({})",
+        "keys_purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n📦 Product: {}\n🗓️ Duration: {} days\n💰 Price: {} {}\n🔑 Your key: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 See our proofs: [Click here]({})",
         "no_stock": "❌ Sorry, no keys available for this duration.",
         "app_no_stock": "❌ This app is currently unavailable. Try another app.",
         "choose_section": "🛒 *Store Sections:*\n━━━━━━━━━━━━\nChoose the appropriate section:",
         "ff_packages_title": "💎 *Free Fire Diamonds Packages*\n━━━━━━━━━━━━\n✨ *Exclusive packages at best prices*\n⚡ *Instant delivery in minutes*\n━━━━━━━━━━━━\n*Choose your package:*",
         
-        # Verification and activation messages
         "ask_password": "⚠️ *MOSLIM STORE* 🛍️\nEnter password to activate the store:",
         "wrong_password": "❌ *Wrong password!* ❌",
         "verified_success": "✅ *Activated successfully!* ✅\n🎉 Welcome to Moslim Store",
@@ -143,14 +151,13 @@ T = {
         "add_balance_text": "💰 *Add Balance*\n━━━━━━━━━━━━\n💵 *Payment methods available:*\n• CIH BANK\n• Binance (USDT)\n• PayPal\n• WhatsApp\n\n📌 *Steps to add:*\n1️⃣ Contact support\n2️⃣ Send the required amount\n3️⃣ Receive balance instantly\n\n✨ *Secure and fast service*",
         "how_to_use_text": "📖 *How to Use*\n━━━━━━━━━━━━\n📌 *Purchase steps:*\n1️⃣ Choose package\n2️⃣ Click buy\n3️⃣ Choose payment method\n4️⃣ Send proof screenshot\n5️⃣ After approval, receive product\n\n⚡ *24/7 support*\n🔒 *Money-back guarantee*",
         "proofs_text": "📢 *Trust and Credibility Proofs Channel*\n━━━━━━━━━━━━\n🔍 *See previous customers' reviews:*\n✅ 100+ documented transactions\n⭐ Customer rating: Excellent\n\n[📢 Click here to see proofs]({})",
-        "purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n💎 Quantity: {} diamonds\n💰 Price: {} MAD\n🔑 Top-up code: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 To see our proofs: [Click here]({})",
+        "purchase_success": "✅ *Purchase successful!* ✅\n━━━━━━━━━━━━\n💎 Quantity: {} diamonds\n💰 Price: {} {}\n🔑 Top-up code: `{}`\n━━━━━━━━━━━━\n📞 Inquiries: [@MOSLIM_SHOP]({})\n📢 To see our proofs: [Click here]({})",
         "out_of_stock": "❌ Sorry, this package is currently unavailable. Try another package!",
         "confirm_purchase": "🎉 Purchase successful! Get your code above",
         "welcome_after_lang": "🛍️ *MOSLIM STORE* 🛍️\n━━━━━━━━━━━━━━━━━━━━\n✨ *Digital services - Instant top-up - Subscriptions* ✨\n⚡ *Speed - Trust - Unbeatable prices* ⚡\n📢 *Customer reviews:* [Our channel is full of proofs]({})\n━━━━━━━━━━━━━━━━━━━━\n🔓 *Press /start to activate the store* 🔓",
         "default_reply": "🤖 *Hello!*\n━━━━━━━━━━━━\nUse the buttons below to navigate the store.\n📢 To verify our credibility: [See proofs]({})",
         "inline_proofs_btn": "📢 Proofs Channel",
         
-        # Social media keys
         "social_media": "📢 Social Media Services",
         "social_choose_platform": "🌐 *Choose a platform:*",
         "social_select_category": "📂 *Select category:*",
@@ -170,5 +177,13 @@ T = {
         "social_no_services_category": "⚠️ No services in this category.",
         "social_service_selected_error": "Service not found",
         "social_cancel_all": "❌ All operations canceled. You can start over.",
+        
+        # ✅ الترجمات الإنجليزية المفقودة
+        "choose_game": "🎮 *Choose the game:*",
+        "choose_service": "🕹️ *Choose the service:*",
+        "payment_instructions": "⚠️ After transfer, send the receipt by pressing the button below.",
+        "payment_method_label": "📌 Payment method:",
+        "amount": "💰 Amount:",
+        "order_id_label": "🆔 Order ID:",
     }
 }
