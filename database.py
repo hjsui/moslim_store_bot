@@ -6,9 +6,16 @@ from datetime import datetime
 def init_db():
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
+    # إنشاء جدول users مع عمود currency (إذا لم يكن موجوداً)
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (user_id INTEGER PRIMARY KEY, username TEXT, verified INTEGER, 
                   purchases TEXT, join_date TEXT, language TEXT DEFAULT 'ar')''')
+    # إضافة عمود currency إذا لم يكن موجوداً (ترقية)
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN currency TEXT DEFAULT 'mad'")
+    except sqlite3.OperationalError:
+        pass  # العمود موجود بالفعل
+    
     c.execute('''CREATE TABLE IF NOT EXISTS orders 
                  (order_id TEXT PRIMARY KEY, user_id INTEGER, product_type TEXT, 
                   product_id TEXT, amount REAL, status TEXT, timestamp TEXT,
@@ -16,7 +23,6 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS admin_logs 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_id INTEGER, admin_name TEXT,
                   product_type TEXT, product_id TEXT, code TEXT, action_date TEXT)''')
-    # جدول جديد لطلبات السوشل ميديا (حتى يمكن متابعة حالة الطلب من API)
     c.execute('''CREATE TABLE IF NOT EXISTS social_orders 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, service_id INTEGER,
                   link TEXT, quantity INTEGER, amount REAL, api_order_id INTEGER,
@@ -101,4 +107,30 @@ def update_social_order_status(api_order_id, status):
     c = conn.cursor()
     c.execute("UPDATE social_orders SET status=? WHERE api_order_id=?", (status, api_order_id))
     conn.commit()
+    conn.close()
+
+# ✅ دوال جديدة للعملة
+def get_user_currency(user_id):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    try:
+        c.execute("SELECT currency FROM users WHERE user_id=?", (user_id,))
+        row = c.fetchone()
+        conn.close()
+        return row[0] if row and row[0] in ['mad', 'usd'] else 'mad'
+    except sqlite3.OperationalError:
+        conn.close()
+        return 'mad'
+
+def set_user_currency(user_id, currency):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    try:
+        c.execute("UPDATE users SET currency = ? WHERE user_id=?", (currency, user_id))
+        conn.commit()
+    except sqlite3.OperationalError:
+        # إذا كان العمود غير موجود، نضيفه ثم نحاول مرة أخرى
+        c.execute("ALTER TABLE users ADD COLUMN currency TEXT DEFAULT 'mad'")
+        c.execute("UPDATE users SET currency = ? WHERE user_id=?", (currency, user_id))
+        conn.commit()
     conn.close()
