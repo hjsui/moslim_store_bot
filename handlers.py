@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي - تم إصلاح عرض الأسعار وإزالة الأزرار الزائدة
+# الإصدار النهائي - تم إصلاح خطأ المبلغ في خدمات المفاتيح نهائياً
 
 import telebot
 from telebot import types
@@ -137,7 +137,6 @@ def register_all_handlers(bot):
             markup.add(types.InlineKeyboardButton(f"{btn_text} - {price_display} {currency_symbol}", callback_data=f"app_buy_{app_id}"))
         bot.send_message(message.chat.id, t["choose_app"], reply_markup=markup, parse_mode="Markdown")
 
-    # ✅ دالة عرض طرق الدفع - المعدلة: لا تعرض زر "أرسل الإيصال" هنا
     def show_payment_methods(user_id, product_type, product_id, amount):
         lang = get_lang(user_id)
         currency = get_user_currency(user_id)
@@ -306,7 +305,7 @@ def register_all_handlers(bot):
                 except:
                     pass
 
-    # ========== دوال السوشل ميديا (لم تتغير) ==========
+    # ========== دوال السوشل ميديا ==========
     def show_social_platforms(user_id, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
@@ -849,7 +848,6 @@ def register_all_handlers(bot):
             else:
                 price_display = price_mad
                 currency_symbol = t.get("currency_mad", "درهم")
-            # ✅ مهم: في callback_data نمرر الأيام فقط، السعر يؤخذ من القاموس لاحقاً
             markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price_display} {currency_symbol} 💰", callback_data=f"key_buy_{prod_id}_{days}"))
         markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
         bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
@@ -967,11 +965,19 @@ def register_all_handlers(bot):
             conn.close()
             return
         conn.close()
-        # إنشاء الطلب هنا
+        # إنشاء الطلب هنا، مع إصلاح المبلغ للمفاتيح
         order_id = None
         if product_type == 'ff':
             order_id = create_order(user_id, 'ff', product_id, amount)
         elif product_type == 'key':
+            # ✅ إصلاح جذري: استخراج السعر الصحيح من keys_inventory بدلاً من الاعتماد على amount
+            # product_id يكون مثلاً 'dripclient_1'
+            key_parts = product_id.split('_')
+            if len(key_parts) == 2:
+                days_key = key_parts[1]
+                if days_key in keys_inventory['dripclient']['prices']:
+                    price_mad = keys_inventory['dripclient']['prices'][days_key]
+                    amount = price_mad  # استخدام السعر الصحيح
             order_id = create_order(user_id, 'key', product_id, amount)
         elif product_type == 'app':
             order_id = create_order(user_id, 'app', product_id, amount)
