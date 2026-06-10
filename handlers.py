@@ -1,5 +1,5 @@
 # handlers.py
-# الملف الموحد النهائي – مع كل التصحيحات
+# الملف الموحد النهائي – مصحح بالكامل (مع تمرير order_id)
 
 import telebot
 from telebot import types
@@ -56,7 +56,6 @@ def register_all_handlers(bot):
     def show_main_menu(message, lang):
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        # ✅ الترتيب الجديد حسب طلبك
         markup.row(t["shop_now"], t["services"])
         markup.row(t["add_balance"], t["profile"])
         markup.row(t["change_language"], t["change_currency"])
@@ -80,7 +79,7 @@ def register_all_handlers(bot):
         markup.add(t["back_to_sections"])
         bot.send_message(message.chat.id, "🎮 *" + t.get("choose_game", "اختر اللعبة:") + "*", reply_markup=markup, parse_mode="Markdown")
 
-    # ✅ دوال لعرض قوائم اختيار اللغة والعملة
+    # قوائم اختيار اللغة والعملة
     def show_language_selector(user_id, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
@@ -139,7 +138,8 @@ def register_all_handlers(bot):
             markup.add(types.InlineKeyboardButton(f"{btn_text} - {price_display} {currency_symbol}", callback_data=f"app_buy_{app_id}"))
         bot.send_message(message.chat.id, t["choose_app"], reply_markup=markup, parse_mode="Markdown")
 
-    def show_payment_methods(user_id, product_type, product_id, amount):
+    # ✅ الدالة المعدلة (تستقبل order_id الآن)
+    def show_payment_methods(user_id, product_type, product_id, amount, order_id):
         lang = get_lang(user_id)
         currency = get_user_currency(user_id)
         t = T[lang]
@@ -153,8 +153,9 @@ def register_all_handlers(bot):
         for key, method in PAYMENT_METHODS.items():
             name = method["name_ar"] if lang == 'ar' else method["name_en"]
             markup.add(types.InlineKeyboardButton(name, callback_data=f"pay_{key}_{product_type}_{product_id}_{amount}"))
+        details = method["details_ar"] if lang == 'ar' else method["details_en"]
         instructions = (f"<b>{t['payment_method_label']}</b> {method['name_ar'] if lang=='ar' else method['name_en']}\n"
-                        f"━━━━━━━━━━━━\n{method['details_ar'] if lang=='ar' else method['details_en']}\n\n"
+                        f"━━━━━━━━━━━━\n{details}\n\n"
                         f"<b>{t['amount']}</b> {amount_display} {currency_symbol}\n"
                         f"<b>{t['order_id_label']}</b> <code>{order_id}</code>\n\n"
                         f"{t['payment_instructions']}")
@@ -164,11 +165,13 @@ def register_all_handlers(bot):
 
     def purchase_ff_package(user_id, pkg, lang):
         amount = prices[pkg]
-        show_payment_methods(user_id, 'ff', pkg, amount)
+        order_id = create_order(user_id, 'ff', pkg, float(amount))
+        show_payment_methods(user_id, 'ff', pkg, amount, order_id)
 
     def purchase_key(user_id, days, lang):
-        price = keys_inventory['dripclient']['prices'][days]
-        show_payment_methods(user_id, 'key', f"dripclient_{days}", price)
+        amount = keys_inventory['dripclient']['prices'][days]
+        order_id = create_order(user_id, 'key', f"dripclient_{days}", float(amount))
+        show_payment_methods(user_id, 'key', f"dripclient_{days}", amount, order_id)
 
     def send_withdrawal_log(admin_username, product_name, price, extra_info="", code_or_link=None):
         if not LOG_CHANNEL_ID:
@@ -406,7 +409,6 @@ def register_all_handlers(bot):
         user_id = message.from_user.id
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
-        # إضافة عمود العملة إذا لم يكن موجوداً
         try:
             c.execute("ALTER TABLE users ADD COLUMN currency TEXT DEFAULT 'mad'")
             conn.commit()
@@ -429,7 +431,7 @@ def register_all_handlers(bot):
             bot.send_message(message.chat.id, T[lang]["ask_password"], parse_mode="Markdown")
         conn.close()
 
-    # ========== اختيار اللغة الأولية (callback) ==========
+    # ========== اختيار اللغة الأولية ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
     def callback_lang(call):
         lang = call.data.split('_')[1]
@@ -438,7 +440,7 @@ def register_all_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, T[lang]["welcome_after_lang"].format(CHANNEL_PROOFS), parse_mode="Markdown")
 
-    # ========== تغيير اللغة (عبر قائمة اختيار) ==========
+    # ========== تغيير اللغة (عبر قائمة) ==========
     @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)].get("change_language", ""))
     def change_language_button(message):
         user_id = message.from_user.id
@@ -461,7 +463,7 @@ def register_all_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         show_main_menu(call.message, 'en')
 
-    # ========== تغيير العملة (عبر قائمة اختيار) ==========
+    # ========== تغيير العملة (عبر قائمة) ==========
     @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)].get("change_currency", ""))
     def change_currency_button(message):
         user_id = message.from_user.id
@@ -581,7 +583,6 @@ def register_all_handlers(bot):
             markup.add(t["back_to_games"])
             bot.send_message(message.chat.id, "🕹️ *" + t.get("choose_service", "اختر الخدمة:") + "*", reply_markup=markup, parse_mode="Markdown")
         elif text == t["shop_now"]:
-            # نفس قائمة الخدمات
             show_services_menu(message, lang)
         elif text == t["apps_service"]:
             show_apps_products(message, lang)
@@ -751,6 +752,7 @@ def register_all_handlers(bot):
         show_games_menu(call.message, lang)
         bot.answer_callback_query(call.id)
 
+    # ========== أوامر السوشل ميديا ==========
     @bot.message_handler(commands=['confirm_social'])
     def confirm_social_order(message):
         user_id = message.from_user.id
@@ -772,16 +774,8 @@ def register_all_handlers(bot):
         api_payload = f"social|{service['service']}|{link}|{quantity}"
         order_id = create_order(user_id, 'social', api_payload, float(total_price))
         del user_social_state[user_id]
-        # عرض واجهة الدفع مع العملة المختارة
-        currency = get_user_currency(user_id)
-        if currency == 'usd':
-            amount_display = round(total_price / USD_TO_MAD, 2)
-            currency_symbol = "$"
-        else:
-            amount_display = total_price
-            currency_symbol = t.get("currency_mad", "درهم")
-        bot.send_message(user_id, f"✅ *" + ("تم إنشاء طلب رقم" if lang=='ar' else "Order created") + f" `{order_id}`!*\n💰 " + t["amount"].format(amount_display, currency_symbol) + f"\n📱 " + t.get("platform", "Platform") + f": {platform_name}\n📌 " + t.get("service", "Service") + f": {service['name']}\n\n" + t["choose_payment"].format(amount_display, currency_symbol), parse_mode="Markdown")
-        show_payment_methods(user_id, 'social', api_payload, total_price)
+        # عرض واجهة الدفع
+        show_payment_methods(user_id, 'social', api_payload, total_price, order_id)
 
     @bot.message_handler(commands=['cancel_social'])
     def cancel_social_order(message):
@@ -961,7 +955,8 @@ def register_all_handlers(bot):
             bot.answer_callback_query(call.id, "🎉 " + ("تم تسليم التطبيق بنجاح!" if lang=='ar' else "App delivered successfully!"))
         else:
             price = app_data["price"]
-            show_payment_methods(user_id, 'app', app_id, price)
+            order_id = create_order(user_id, 'app', app_id, float(price))
+            show_payment_methods(user_id, 'app', app_id, price, order_id)
             bot.answer_callback_query(call.id)
 
     # ========== نظام الدفع (الكول باك) ==========
@@ -1019,7 +1014,8 @@ def register_all_handlers(bot):
             return
         update_order_status(order_id, 'cancelled', admin_action='user_cancelled')
         product_type, product_id, amount = order[2], order[3], order[4]
-        show_payment_methods(user_id, product_type, product_id, amount)
+        new_order_id = create_order(user_id, product_type, product_id, float(amount))
+        show_payment_methods(user_id, product_type, product_id, amount, new_order_id)
         bot.answer_callback_query(call.id, "✅ " + ("يمكنك اختيار طريقة دفع جديدة" if lang=='ar' else "You can choose a new payment method"))
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('send_proof_'))
