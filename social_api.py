@@ -1,10 +1,11 @@
 # social_api.py
 # هذا الملف مسؤول عن التواصل مع API موقع xfollowr لخدمات السوشل ميديا
 # تمت إضافة دوال البحث عن الخدمات، التخزين المؤقت، وجلب خدمات متعددة
+# تم تحديث calculate_price_with_profit لدعم العملة (اختياري)
 
 import requests
 import time
-from config import SOCIAL_API_URL, SOCIAL_API_KEY, SOCIAL_PROFIT_PERCENT
+from config import SOCIAL_API_URL, SOCIAL_API_KEY, SOCIAL_PROFIT_PERCENT, USD_TO_MAD
 
 # متغيرات التخزين المؤقت للخدمات
 _services_cache = None
@@ -101,10 +102,15 @@ def get_orders_status(order_ids):
     ids_str = ','.join(str(i) for i in order_ids)
     return api_request('status', {'orders': ids_str})
 
-def calculate_price_with_profit(original_price):
+def calculate_price_with_profit(original_price, currency='mad'):
     """
-    حساب السعر النهائي بعد إضافة نسبة الربح المحددة في config.py
-    original_price: السعر الأصلي بالدولار أو العملة التي يعطيها الـ API
-    يعيد السعر بالدرهم المغربي (MAD) مع تقريب لأقرب رقمين عشريين
+    حساب السعر النهائي بعد إضافة نسبة الربح.
+    original_price: السعر الأصلي بالدولار (من API)
+    currency: العملة المطلوبة ('mad' أو 'usd')
+    يعيد السعر بالعملة المطلوبة مع التقريب لأقرب رقمين عشريين
     """
-    return round(original_price * (1 + SOCIAL_PROFIT_PERCENT / 100), 2)
+    price_with_profit_usd = original_price * (1 + SOCIAL_PROFIT_PERCENT / 100)
+    if currency == 'usd':
+        return round(price_with_profit_usd, 2)
+    else:
+        return round(price_with_profit_usd * USD_TO_MAD, 2)
