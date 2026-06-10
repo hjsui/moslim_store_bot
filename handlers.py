@@ -1,5 +1,6 @@
 # handlers.py
-# الإصدار النهائي - تم إصلاح خطأ المبلغ في خدمات المفاتيح نهائياً
+# الإصدار النهائي المصحح بالكامل – 2026-06-10
+# تم إصلاح خطأ السعر في خدمة المفاتيح بشكل جذري
 
 import telebot
 from telebot import types
@@ -421,7 +422,7 @@ def register_all_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, T[lang]["welcome_after_lang"].format(CHANNEL_PROOFS), parse_mode="Markdown")
 
-    # ========== تغيير اللغة (قائمة اختيار) ==========
+    # ========== تغيير اللغة ==========
     @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)].get("change_language", ""))
     def change_language_button(message):
         user_id = message.from_user.id
@@ -430,21 +431,19 @@ def register_all_handlers(bot):
 
     @bot.callback_query_handler(func=lambda call: call.data == "set_lang_ar")
     def set_lang_ar(call):
-        user_id = call.from_user.id
-        set_lang(user_id, 'ar')
+        set_lang(call.from_user.id, 'ar')
         bot.answer_callback_query(call.id, "✅ تم تغيير اللغة إلى العربية")
         bot.delete_message(call.message.chat.id, call.message.message_id)
         show_main_menu(call.message, 'ar')
 
     @bot.callback_query_handler(func=lambda call: call.data == "set_lang_en")
     def set_lang_en(call):
-        user_id = call.from_user.id
-        set_lang(user_id, 'en')
+        set_lang(call.from_user.id, 'en')
         bot.answer_callback_query(call.id, "✅ Language changed to English")
         bot.delete_message(call.message.chat.id, call.message.message_id)
         show_main_menu(call.message, 'en')
 
-    # ========== تغيير العملة (قائمة اختيار) ==========
+    # ========== تغيير العملة ==========
     @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)].get("change_currency", ""))
     def change_currency_button(message):
         user_id = message.from_user.id
@@ -453,9 +452,8 @@ def register_all_handlers(bot):
 
     @bot.callback_query_handler(func=lambda call: call.data == "set_currency_mad")
     def set_currency_mad(call):
-        user_id = call.from_user.id
-        set_user_currency(user_id, 'mad')
-        lang = get_lang(user_id)
+        set_user_currency(call.from_user.id, 'mad')
+        lang = get_lang(call.from_user.id)
         t = T[lang]
         bot.answer_callback_query(call.id, t["currency_changed"].format(t["currency_mad"]))
         bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -463,9 +461,8 @@ def register_all_handlers(bot):
 
     @bot.callback_query_handler(func=lambda call: call.data == "set_currency_usd")
     def set_currency_usd(call):
-        user_id = call.from_user.id
-        set_user_currency(user_id, 'usd')
-        lang = get_lang(user_id)
+        set_user_currency(call.from_user.id, 'usd')
+        lang = get_lang(call.from_user.id)
         t = T[lang]
         bot.answer_callback_query(call.id, t["currency_changed"].format(t["currency_usd"]))
         bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -485,7 +482,6 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # معالجة السوشل ميديا
         if user_id in user_social_state:
             step = user_social_state[user_id].get('step')
             if message.text in ['/cancel_social', 'إلغاء', 'رجوع', 'Cancel', 'Back']:
@@ -752,7 +748,6 @@ def register_all_handlers(bot):
             bot.send_message(user_id, "⚠️ " + ("البيانات ناقصة. يرجى إعادة اختيار الخدمة." if lang=='ar' else "Incomplete data. Please select the service again."))
             del user_social_state[user_id]
             return
-        # تخزين بيانات الطلب مؤقتاً
         user_social_state[user_id]['temp_order'] = {
             'service': service,
             'link': link,
@@ -760,7 +755,6 @@ def register_all_handlers(bot):
             'total_price_mad': total_price_mad,
             'platform_name': platform_name
         }
-        # عرض طرق الدفع (سيتم إنشاء الطلب في pay_)
         show_payment_methods(user_id, 'social', f"temp_{user_id}", total_price_mad)
 
     @bot.message_handler(commands=['cancel_social'])
@@ -829,7 +823,7 @@ def register_all_handlers(bot):
             show_payment_methods(user_id, 'ff', pkg, int(prices[pkg]))
             bot.answer_callback_query(call.id)
 
-    # ========== اختيار مدة المفتاح ==========
+    # ========== اختيار مدة المفتاح (مع تمرير السعر في callback) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
     def choose_duration(call):
         prod_id = call.data.split('_')[2]
@@ -848,7 +842,8 @@ def register_all_handlers(bot):
             else:
                 price_display = price_mad
                 currency_symbol = t.get("currency_mad", "درهم")
-            markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price_display} {currency_symbol} 💰", callback_data=f"key_buy_{prod_id}_{days}"))
+            # ✅ تمرير السعر مع الأيام
+            markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price_display} {currency_symbol} 💰", callback_data=f"key_buy_{prod_id}_{days}_{price_mad}"))
         markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
         bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
@@ -860,11 +855,17 @@ def register_all_handlers(bot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
     def handle_key_buy(call):
         parts = call.data.split('_')
-        if len(parts) < 4:
+        # الصيغة: key_buy_{prod_id}_{days}_{price_mad}
+        if len(parts) < 5:
             bot.answer_callback_query(call.id, "❌ " + ("خطأ" if get_lang(call.from_user.id)=='ar' else "Error"), show_alert=True)
             return
         prod_id = parts[2]
         days = parts[3]
+        try:
+            price_mad = int(parts[4])
+        except:
+            bot.answer_callback_query(call.id, "❌ " + ("خطأ في السعر" if get_lang(call.from_user.id)=='ar' else "Price error"), show_alert=True)
+            return
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
@@ -875,7 +876,6 @@ def register_all_handlers(bot):
             code = keys_inventory[prod_id]["codes"][days].pop(0)
             product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
             currency = get_user_currency(user_id)
-            price_mad = keys_inventory[prod_id]["prices"][days]
             if currency == 'usd':
                 price_display = round(price_mad / USD_TO_MAD, 2)
                 currency_symbol = "$"
@@ -899,7 +899,7 @@ def register_all_handlers(bot):
                     pass
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
-            price_mad = keys_inventory['dripclient']['prices'][days]
+            # ✅ استخدام السعر المستخرج من callback مباشرة
             show_payment_methods(user_id, 'key', f"dripclient_{days}", price_mad)
             bot.answer_callback_query(call.id)
 
@@ -944,7 +944,7 @@ def register_all_handlers(bot):
             show_payment_methods(user_id, 'app', app_id, app_data["price"])
             bot.answer_callback_query(call.id)
 
-    # ========== معالجات الدفع الرئيسية ==========
+    # ========== معالجات الدفع ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
     def handle_payment_method(call):
         parts = call.data.split('_', 4)
@@ -958,31 +958,22 @@ def register_all_handlers(bot):
         t = T[lang]
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
-        # التحقق من وجود طلب قيد المعالجة
         c.execute("SELECT order_id FROM orders WHERE user_id=? AND status IN ('pending', 'waiting_admin')", (user_id,))
         if c.fetchone():
             bot.answer_callback_query(call.id, t["already_paid"], show_alert=True)
             conn.close()
             return
         conn.close()
-        # إنشاء الطلب هنا، مع إصلاح المبلغ للمفاتيح
+        # إنشاء الطلب
         order_id = None
         if product_type == 'ff':
             order_id = create_order(user_id, 'ff', product_id, amount)
         elif product_type == 'key':
-            # ✅ إصلاح جذري: استخراج السعر الصحيح من keys_inventory بدلاً من الاعتماد على amount
-            # product_id يكون مثلاً 'dripclient_1'
-            key_parts = product_id.split('_')
-            if len(key_parts) == 2:
-                days_key = key_parts[1]
-                if days_key in keys_inventory['dripclient']['prices']:
-                    price_mad = keys_inventory['dripclient']['prices'][days_key]
-                    amount = price_mad  # استخدام السعر الصحيح
+            # السعر صحيح من البداية (لأننا مررناه من key_buy)
             order_id = create_order(user_id, 'key', product_id, amount)
         elif product_type == 'app':
             order_id = create_order(user_id, 'app', product_id, amount)
         elif product_type == 'social':
-            # استرجاع البيانات المؤقتة
             if user_id in user_social_state and 'temp_order' in user_social_state[user_id]:
                 temp = user_social_state[user_id]['temp_order']
                 api_payload = f"social|{temp['service']['service']}|{temp['link']}|{temp['quantity']}"
