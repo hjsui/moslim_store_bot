@@ -14,7 +14,8 @@ from config import (
 )
 from database import (
     get_lang, set_lang, get_verified_count, add_purchase_record,
-    create_order, update_order_status, get_order
+    create_order, update_order_status, get_order,
+    get_user_currency, set_user_currency
 )
 from utils import is_admin, is_whitelisted
 from payment_methods import PAYMENT_METHODS
@@ -30,25 +31,6 @@ from social_structure import (
 
 # ========== متغير عام ==========
 user_social_state = {}
-
-# ========== دالة مساعدة لجلب عملة المستخدم ==========
-def get_user_currency(user_id):
-    conn = sqlite3.connect('moslim_store.db')
-    c = conn.cursor()
-    c.execute("SELECT currency FROM users WHERE user_id=?", (user_id,))
-    row = c.fetchone()
-    conn.close()
-    if row and row[0] in ['mad', 'usd']:
-        return row[0]
-    return DEFAULT_CURRENCY
-
-# ========== دالة مساعدة لتحديث عملة المستخدم ==========
-def set_user_currency(user_id, currency):
-    conn = sqlite3.connect('moslim_store.db')
-    c = conn.cursor()
-    c.execute("UPDATE users SET currency = ? WHERE user_id=?", (currency, user_id))
-    conn.commit()
-    conn.close()
 
 def register_all_handlers(bot):
     """تسجيل جميع معالجات البوت"""
@@ -69,7 +51,7 @@ def register_all_handlers(bot):
         markup.row(t["add_balance"], t["profile"])
         markup.row(t["how_to_use"], t["support"])
         markup.row(t["proofs"])
-        # ✅ إضافة زر اللغة والعملة في صف جديد
+        # ✅ زر اللغة والعملة في صف جديد
         markup.row(t["change_language"], t["change_currency"])
         user_count = get_verified_count()
         msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
@@ -110,8 +92,6 @@ def register_all_handlers(bot):
 
     def show_keys_products(message, lang):
         t = T[lang]
-        user_id = message.from_user.id
-        currency = get_user_currency(user_id)
         markup = types.InlineKeyboardMarkup(row_width=1)
         for prod_id, prod_data in keys_inventory.items():
             btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
@@ -139,7 +119,6 @@ def register_all_handlers(bot):
         lang = get_lang(user_id)
         currency = get_user_currency(user_id)
         t = T[lang]
-        # تحويل المبلغ إلى العملة المختارة (المبلغ قادم بالدرهم)
         if currency == 'usd':
             amount_display = round(amount / USD_TO_MAD, 2)
             currency_symbol = "$"
@@ -150,7 +129,6 @@ def register_all_handlers(bot):
         for key, method in PAYMENT_METHODS.items():
             name = method["name_ar"] if lang == 'ar' else method["name_en"]
             markup.add(types.InlineKeyboardButton(name, callback_data=f"pay_{key}_{product_type}_{product_id}_{amount}"))
-        # نرسل المبلغ الأصلي (بالدرهم) في callback، لكن نعرضه بالعملة المختارة
         bot.send_message(user_id, t["choose_payment"].format(amount_display, currency_symbol), reply_markup=markup, parse_mode="Markdown")
 
     def purchase_ff_package(user_id, pkg, lang):
@@ -376,12 +354,6 @@ def register_all_handlers(bot):
         user_id = message.from_user.id
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
-        # التحقق من وجود عمود currency، وإضافته إذا لم يكن موجوداً (ترقية قاعدة البيانات)
-        try:
-            c.execute("ALTER TABLE users ADD COLUMN currency TEXT DEFAULT 'mad'")
-            conn.commit()
-        except sqlite3.OperationalError:
-            pass  # العمود موجود بالفعل
         c.execute("SELECT verified, language FROM users WHERE user_id=?", (user_id,))
         user = c.fetchone()
         if not user:
@@ -399,7 +371,7 @@ def register_all_handlers(bot):
             bot.send_message(message.chat.id, T[lang]["ask_password"], parse_mode="Markdown")
         conn.close()
 
-    # ========== معالج اختيار اللغة ==========
+    # ========== معالج اختيار اللغة (الأولية) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
     def callback_lang(call):
         lang = call.data.split('_')[1]
@@ -430,9 +402,9 @@ def register_all_handlers(bot):
         t = T[lang]
         currency_name = t["currency_usd"] if new_currency == 'usd' else t["currency_mad"]
         bot.send_message(user_id, t["currency_changed"].format(currency_name))
-        show_main_menu(message, lang)  # إعادة عرض القائمة لتحديث العملة
+        show_main_menu(message, lang)
 
-    # ========== المعالج الرئيسي للرسائل النصية (الأزرار والنصوص) ==========
+    # ========== المعالج الرئيسي للرسائل النصية ==========
     @bot.message_handler(func=lambda msg: True, content_types=['text'])
     def handle_messages(message):
         user_id = message.from_user.id
@@ -446,23 +418,20 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # ** معالجة حالة السوشل ميديا (الرابط والكمية) **
+        # معالجة حالة السوشل ميديا (الرابط والكمية)
         if user_id in user_social_state:
             current_step = user_social_state[user_id].get('step')
-            # إذا كان المستخدم يريد الإلغاء في أي خطوة
             if message.text in ['/cancel_social', 'إلغاء', 'رجوع']:
                 del user_social_state[user_id]
                 bot.send_message(user_id, "❌ تم إلغاء طلب السوشل ميديا. يمكنك البدء من جديد.")
                 conn.close()
                 return
-
             if current_step == 'awaiting_link':
                 user_social_state[user_id]['link'] = message.text
                 user_social_state[user_id]['step'] = 'awaiting_quantity'
                 bot.send_message(user_id, t["social_send_quantity"])
                 conn.close()
                 return
-
             elif current_step == 'awaiting_quantity':
                 try:
                     quantity = int(message.text)
@@ -474,7 +443,6 @@ def register_all_handlers(bot):
                     total_price_mad = calculate_price_with_profit(original_price * quantity)
                     user_social_state[user_id]['total_price'] = total_price_mad
                     platform_name = user_social_state[user_id].get('platform_name', '')
-                    # تحويل السعر للعرض بالعملة المختارة
                     currency = get_user_currency(user_id)
                     if currency == 'usd':
                         total_price_display = round(total_price_mad / USD_TO_MAD, 2)
@@ -503,14 +471,12 @@ def register_all_handlers(bot):
                     bot.send_message(user_id, "❌ حدث خطأ أثناء معالجة الكمية. حاول مرة أخرى.")
                     conn.close()
                     return
-
             elif current_step == 'awaiting_confirmation':
-                # في حالة كتابة أي نص آخر وهو في انتظار التأكيد، نذكره بالأوامر
                 bot.send_message(user_id, "⚠️ يرجى تأكيد الطلب باستخدام /confirm_social أو إلغاؤه باستخدام /cancel_social")
                 conn.close()
                 return
 
-        # إذا لم يكن في حالة سوشل ميديا، نكمل معالجة الأزرار العادية
+        # التحقق من كلمة المرور
         if not verified:
             if message.text == STORE_PASSWORD:
                 c.execute("UPDATE users SET verified=1 WHERE user_id=?", (user_id,))
@@ -582,5 +548,446 @@ def register_all_handlers(bot):
             bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
         conn.close()
 
-    # باقي الكود (كول باك السوشل ميديا، أوامر التأكيد، شراء الجواهر، المفاتيح، التطبيقات، نظام الدفع) لم يتغير
-    # ... (تم حذف التكرار للاختصار، ولكن في الملف الكامل يجب أن تبقى كما هي)
+    # ========== كول باك السوشل ميديا (لم تتغير) ==========
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_platform_'))
+    def social_platform_selected(call):
+        user_id = call.from_user.id
+        platform_id = call.data.split('_')[2]
+        lang = get_lang(user_id)
+        if user_id in user_social_state:
+            del user_social_state[user_id]
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_social_categories(user_id, platform_id, lang)
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_category_'))
+    def social_category_selected(call):
+        parts = call.data.split('_')
+        platform_id = parts[2]
+        category_name = '_'.join(parts[3:])
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_social_subcategories(user_id, platform_id, category_name, lang)
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_subcategory_'))
+    def social_subcategory_selected(call):
+        parts = call.data.split('_')
+        platform_id = parts[2]
+        category_name = parts[3]
+        subcategory_name = '_'.join(parts[4:])
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        service_ids = get_service_ids_from_structure(platform_id, category_name, subcategory_name)
+        if not service_ids:
+            bot.answer_callback_query(call.id, "❌ لا توجد خدمات في هذا التصنيف.", show_alert=True)
+            return
+        services = get_services_by_ids(service_ids)
+        if not services:
+            bot.answer_callback_query(call.id, "❌ لا توجد خدمات متاحة حالياً.", show_alert=True)
+            return
+        platform_data = SOCIAL_STRUCTURE.get(platform_id, {})
+        user_social_state[user_id] = {
+            'platform_id': platform_id,
+            'platform_name': platform_data.get('name', ''),
+            'platform_icon': platform_data.get('icon', '📢'),
+            'category_name': category_name,
+            'subcategory_name': subcategory_name,
+            'services': services,
+            'step': 'selecting_service'
+        }
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_services_list(user_id, lang)
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_service_'))
+    def social_service_selected(call):
+        service_id = int(call.data.split('_')[2])
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        t = T[lang]
+        data = user_social_state.get(user_id, {})
+        services = data.get('services', [])
+        service = next((s for s in services if s['service'] == service_id), None)
+        if not service:
+            bot.answer_callback_query(call.id, t["social_service_selected_error"], show_alert=True)
+            return
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        user_social_state[user_id]['selected_service'] = service
+        user_social_state[user_id]['step'] = 'awaiting_link'
+        bot.send_message(user_id, t["social_send_link"])
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_back_to_categories_'))
+    def social_back_to_categories(call):
+        parts = call.data.split('_')
+        platform_id = parts[4]
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_social_categories(user_id, platform_id, lang)
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('social_back_to_subcategories_'))
+    def social_back_to_subcategories(call):
+        parts = call.data.split('_')
+        platform_id = parts[4]
+        category_name = '_'.join(parts[5:])
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_social_subcategories(user_id, platform_id, category_name, lang)
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "social_back_to_platforms")
+    def social_back_to_platforms(call):
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        if user_id in user_social_state:
+            del user_social_state[user_id]
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_social_platforms(user_id, lang)
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "social_cancel_all")
+    def social_cancel_all(call):
+        user_id = call.from_user.id
+        if user_id in user_social_state:
+            del user_social_state[user_id]
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.send_message(user_id, "❌ تم إلغاء جميع العمليات. يمكنك البدء من جديد.")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "social_back_to_main")
+    def social_back_to_main(call):
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        if user_id in user_social_state:
+            del user_social_state[user_id]
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_main_menu(call.message, lang)
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "back_to_games_menu")
+    def back_to_games_menu(call):
+        lang = get_lang(call.from_user.id)
+        show_games_menu(call.message, lang)
+        bot.answer_callback_query(call.id)
+
+    # ========== أوامر السوشل ميديا ==========
+    @bot.message_handler(commands=['confirm_social'])
+    def confirm_social_order(message):
+        user_id = message.from_user.id
+        lang = get_lang(user_id)
+        t = T[lang]
+
+        if user_id not in user_social_state or user_social_state[user_id].get('step') != 'awaiting_confirmation':
+            bot.send_message(user_id, "⚠️ لا يوجد طلب قيد الانتظار للتأكيد. ابدأ باختيار خدمة من قسم السوشل ميديا.")
+            return
+
+        data = user_social_state[user_id]
+        service = data.get('selected_service')
+        link = data.get('link')
+        quantity = data.get('quantity')
+        total_price = data.get('total_price')
+        platform_name = data.get('platform_name', '')
+
+        if not all([service, link, quantity, total_price]):
+            bot.send_message(user_id, "⚠️ البيانات ناقصة. يرجى إعادة اختيار الخدمة.")
+            del user_social_state[user_id]
+            return
+
+        api_payload = f"social|{service['service']}|{link}|{quantity}"
+        order_id = create_order(user_id, 'social', api_payload, float(total_price))
+
+        del user_social_state[user_id]
+
+        bot.send_message(user_id, f"✅ *تم إنشاء طلب رقم `{order_id}` بنجاح!*\n💰 المبلغ المطلوب: {total_price} درهم.\n📱 المنصة: {platform_name}\n📌 الخدمة: {service['name']}\n\nالرجاء اختيار طريقة الدفع من القائمة أدناه.", parse_mode="Markdown")
+        show_payment_methods(user_id, 'social', api_payload, total_price)
+
+    @bot.message_handler(commands=['cancel_social'])
+    def cancel_social_order(message):
+        user_id = message.from_user.id
+        if user_id in user_social_state:
+            del user_social_state[user_id]
+            bot.send_message(user_id, "❌ تم إلغاء طلب السوشل ميديا.")
+        else:
+            bot.send_message(user_id, "⚠️ لا يوجد طلب نشط لإلغائه.")
+
+    @bot.message_handler(commands=['social_status'])
+    def social_status(message):
+        args = message.text.split()
+        if len(args) != 2:
+            bot.send_message(message.chat.id, "❗ الاستخدام: /social_status <api_order_id>")
+            return
+        try:
+            api_order_id = int(args[1])
+        except:
+            bot.send_message(message.chat.id, "❌ معرف الطلب يجب أن يكون رقماً.")
+            return
+        status_data = get_order_status(api_order_id)
+        if status_data and 'status' in status_data:
+            msg = f"📊 *حالة الطلب {api_order_id}:*\n" + \
+                  f"📌 الحالة: {status_data.get('status', 'غير معروف')}\n" + \
+                  f"💵 المتبقي: {status_data.get('remains', 0)}\n" + \
+                  f"⚡ بدء العد: {status_data.get('start_count', 0)}"
+            bot.send_message(message.chat.id, msg, parse_mode="Markdown")
+        else:
+            bot.send_message(message.chat.id, "❌ لم نتمكن من جلب حالة الطلب.")
+
+    # ========== شراء الجواهر ==========
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
+    def process_purchase(call):
+        pkg = call.data.split('_')[1]
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        t = T[lang]
+        if pkg not in codes_inventory or not codes_inventory[pkg]:
+            bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
+            return
+        if is_whitelisted(user_id):
+            code = codes_inventory[pkg].pop(0)
+            bot.send_message(user_id, t["purchase_success"].format(pkg, prices[pkg], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
+            add_purchase_record(user_id, f"📦 {pkg}💎 ({prices[pkg]} DH): {code} - {datetime.now()}")
+            conn = sqlite3.connect('moslim_store.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                      (user_id, call.from_user.username, 'ff', pkg, code, datetime.now().isoformat()))
+            conn.commit()
+            conn.close()
+            send_withdrawal_log(call.from_user.username, f"{pkg} جوهرة", prices[pkg], code_or_link=code)
+            for admin in ADMIN_IDS:
+                try:
+                    bot.send_message(admin, f"🔄 الوكيل @{call.from_user.username} سحب {pkg} جوهرة (كود: {code})")
+                except:
+                    pass
+            bot.answer_callback_query(call.id, t["confirm_purchase"])
+        else:
+            purchase_ff_package(user_id, pkg, lang)
+            bot.answer_callback_query(call.id)
+
+    # ========== اختيار مدة المفتاح ==========
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
+    def choose_duration(call):
+        prod_id = call.data.split('_')[2]
+        lang = get_lang(call.from_user.id)
+        t = T[lang]
+        prod_data = keys_inventory.get(prod_id)
+        if not prod_data:
+            bot.answer_callback_query(call.id, "❌ المنتج غير موجود", show_alert=True)
+            return
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        for days, price in prod_data["prices"].items():
+            markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price} DH 💰", callback_data=f"key_buy_{prod_id}_{days}"))
+        markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
+        bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except:
+            pass
+
+    # شراء المفتاح
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('key_buy_'))
+    def handle_key_buy(call):
+        parts = call.data.split('_')
+        if len(parts) < 4:
+            bot.answer_callback_query(call.id, "خطأ", show_alert=True)
+            return
+        prod_id = parts[2]
+        days = parts[3]
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        t = T[lang]
+        if prod_id not in keys_inventory or days not in keys_inventory[prod_id]["codes"] or not keys_inventory[prod_id]["codes"][days]:
+            bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
+            return
+        if is_whitelisted(user_id):
+            code = keys_inventory[prod_id]["codes"][days].pop(0)
+            product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
+            bot.send_message(user_id, t["keys_purchase_success"].format(product_name, days, keys_inventory[prod_id]["prices"][days], code, ADMIN_CONTACT, CHANNEL_PROOFS), parse_mode="Markdown")
+            add_purchase_record(user_id, f"🔑 {product_name} ({days} يوم): {code} - {datetime.now()}")
+            conn = sqlite3.connect('moslim_store.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                      (user_id, call.from_user.username, 'key', f"{prod_id}_{days}", code, datetime.now().isoformat()))
+            conn.commit()
+            conn.close()
+            send_withdrawal_log(call.from_user.username, product_name, keys_inventory[prod_id]["prices"][days], extra_info=f"🗓️ المدة: {days} يوم\n", code_or_link=code)
+            for admin in ADMIN_IDS:
+                try:
+                    bot.send_message(admin, f"🔄 الوكيل @{call.from_user.username} سحب مفتاح {product_name} مدة {days} أيام (كود: {code})")
+                except:
+                    pass
+            bot.answer_callback_query(call.id, t["confirm_purchase"])
+        else:
+            purchase_key(user_id, days, lang)
+            bot.answer_callback_query(call.id)
+
+    # شراء التطبيقات
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('app_buy_'))
+    def process_app_purchase(call):
+        app_id = call.data.split('_')[2]
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        t = T[lang]
+        app_data = apps_inventory.get(app_id)
+        if not app_data:
+            bot.answer_callback_query(call.id, t["app_no_stock"], show_alert=True)
+            return
+        if is_whitelisted(user_id):
+            product_name = app_data["name_ar"] if lang == 'ar' else app_data["name_en"]
+            download_link = app_data.get("link", "")
+            channel_link = app_data.get("update_channel", "")
+            price = app_data["price"]
+            success_msg = t["order_accepted"].format(product_name, price, download_link, channel_link, ADMIN_CONTACT, CHANNEL_PROOFS)
+            bot.send_message(user_id, success_msg, parse_mode="Markdown")
+            conn = sqlite3.connect('moslim_store.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO admin_logs (admin_id, admin_name, product_type, product_id, code, action_date) VALUES (?,?,?,?,?,?)",
+                      (user_id, call.from_user.username, 'app', app_id, download_link, datetime.now().isoformat()))
+            conn.commit()
+            conn.close()
+            send_withdrawal_log(call.from_user.username, product_name, price, extra_info=f"📢 قناة التحديثات: [انضم]({channel_link})\n", code_or_link=download_link)
+            for admin in ADMIN_IDS:
+                try:
+                    bot.send_message(admin, f"🔄 الوكيل @{call.from_user.username} سحب تطبيق {product_name}")
+                except:
+                    pass
+            bot.answer_callback_query(call.id, "🎉 تم تسليم التطبيق بنجاح!")
+        else:
+            price = app_data["price"]
+            show_payment_methods(user_id, 'app', app_id, price)
+            bot.answer_callback_query(call.id)
+
+    # ========== نظام الدفع ==========
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
+    def handle_payment_method(call):
+        parts = call.data.split('_', 4)
+        if len(parts) < 5:
+            bot.answer_callback_query(call.id, "خطأ في البيانات", show_alert=True)
+            return
+        method_key, product_type, product_id, amount = parts[1], parts[2], parts[3], parts[4]
+        user_id = call.from_user.id
+        lang = get_lang(user_id)
+        t = T[lang]
+        conn = sqlite3.connect('moslim_store.db')
+        c = conn.cursor()
+        c.execute("SELECT order_id FROM orders WHERE user_id=? AND status IN ('pending', 'waiting_admin')", (user_id,))
+        if c.fetchone():
+            bot.answer_callback_query(call.id, t["already_paid"], show_alert=True)
+            conn.close()
+            return
+        conn.close()
+        order_id = create_order(user_id, product_type, product_id, float(amount))
+        method = PAYMENT_METHODS.get(method_key)
+        if not method:
+            bot.answer_callback_query(call.id, "طريقة دفع غير معروفة", show_alert=True)
+            return
+        details = method["details_ar"] if lang == 'ar' else method["details_en"]
+        instructions = (f"<b>📌 طريقة الدفع:</b> {method['name_ar'] if lang=='ar' else method['name_en']}\n"
+                        f"━━━━━━━━━━━━\n{details}\n\n<b>💰 المبلغ:</b> {amount} درهم\n<b>🆔 رقم الطلب:</b> <code>{order_id}</code>\n\n"
+                        f"⚠️ بعد التحويل، أرسل صورة الإيصال بالضغط على الزر أدناه.")
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("📸 أرسل الإيصال", callback_data=f"send_proof_{order_id}"))
+        markup.add(types.InlineKeyboardButton("🔄 تغيير طريقة الدفع", callback_data=f"change_payment_{order_id}"))
+        bot.send_message(user_id, instructions, reply_markup=markup, parse_mode="HTML")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('change_payment_'))
+    def change_payment_method(call):
+        order_id = call.data.split('_', 2)[2]
+        user_id = call.from_user.id
+        order = get_order(order_id)
+        if not order or order[1] != user_id or order[5] not in ('pending', 'waiting_admin', 'rejected'):
+            bot.answer_callback_query(call.id, "لا يمكن تغيير طريقة الدفع الآن", show_alert=True)
+            return
+        update_order_status(order_id, 'cancelled', admin_action='user_cancelled')
+        product_type, product_id, amount = order[2], order[3], order[4]
+        show_payment_methods(user_id, product_type, product_id, amount)
+        bot.answer_callback_query(call.id, "✅ يمكنك اختيار طريقة دفع جديدة")
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('send_proof_'))
+    def ask_for_proof(call):
+        order_id = call.data.split('_', 2)[2]
+        lang = get_lang(call.from_user.id)
+        t = T[lang]
+        bot.answer_callback_query(call.id)
+        bot.send_message(call.from_user.id, t["ask_proof"], parse_mode="Markdown")
+        bot.register_next_step_handler_by_chat_id(call.from_user.id, lambda msg: process_proof_photo(msg, order_id))
+
+    def process_proof_photo(message, order_id):
+        user_id = message.from_user.id
+        lang = get_lang(user_id)
+        t = T[lang]
+        if not message.photo:
+            bot.send_message(user_id, "❌ يرجى إرسال صورة وليس نصاً. أعد المحاولة.")
+            bot.register_next_step_handler_by_chat_id(user_id, lambda msg: process_proof_photo(msg, order_id))
+            return
+        waiting_msg = bot.send_message(user_id, t["proof_received"], parse_mode="Markdown")
+        photo_id = message.photo[-1].file_id
+        update_order_status(order_id, 'waiting_admin', proof_photo_id=photo_id)
+        order = get_order(order_id)
+        if not order:
+            bot.send_message(user_id, "❌ حدث خطأ في الطلب.")
+            return
+        product_type, product_id, amount = order[2], order[3], order[4]
+        if product_type == 'ff':
+            product_name = f"جواهر فري فاير ({product_id} جوهرة)"
+        elif product_type == 'key':
+            parts = product_id.split('_')
+            product_name = f"مفتاح DRIP CLIENT - {parts[1] if len(parts)>1 else product_id} يوم"
+        elif product_type == 'app':
+            app_data = apps_inventory.get(product_id, {})
+            product_name = app_data.get("name_ar", "تطبيق") if lang == 'ar' else app_data.get("name_en", "App")
+        elif product_type == 'social':
+            product_name = "خدمة سوشل ميديا"
+        else:
+            product_name = "منتج غير معروف"
+        admin_msg = (f"<b>🔔 طلب دفع جديد</b>\n━━━━━━━━━━━━\n"
+                     f"<b>🆔 الطلب:</b> <code>{order_id}</code>\n"
+                     f"<b>👤 المستخدم:</b> @{message.from_user.username}\n"
+                     f"<b>📦 المنتج:</b> {product_name}\n"
+                     f"<b>💰 المبلغ:</b> {amount} درهم\n"
+                     f"<b>📸 <a href='tg://user?id={user_id}'>إثبات الدفع</a></b>")
+        markup_admin = types.InlineKeyboardMarkup(row_width=2)
+        markup_admin.add(
+            types.InlineKeyboardButton("✅ قبول الطلب", callback_data=f"admin_accept_{order_id}"),
+            types.InlineKeyboardButton("❌ رفض الطلب", callback_data=f"admin_reject_{order_id}")
+        )
+        for admin in ADMIN_IDS:
+            try:
+                bot.send_photo(admin, photo_id, caption=admin_msg, reply_markup=markup_admin, parse_mode="HTML")
+            except:
+                pass
+        bot.edit_message_text("📸 تم استلام إثبات الدفع! سيتم مراجعته من قبل الإدارة قريباً.", chat_id=user_id, message_id=waiting_msg.message_id, parse_mode="Markdown")
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('admin_accept_'))
+    def admin_accept_order(call):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        order_id = call.data.split('_', 2)[2]
+        finalize_order(order_id, accepted=True, admin_id=call.from_user.id)
+        bot.answer_callback_query(call.id, "✅ تم قبول الطلب")
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('admin_reject_'))
+    def admin_reject_order(call):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        order_id = call.data.split('_', 2)[2]
+        finalize_order(order_id, accepted=False, admin_id=call.from_user.id)
+        bot.answer_callback_query(call.id, "❌ تم رفض الطلب")
+
+    @bot.callback_query_handler(func=lambda call: call.data == "back_to_key_products")
+    def back_to_key_products(call):
+        lang = get_lang(call.from_user.id)
+        t = T[lang]
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        for prod_id, prod_data in keys_inventory.items():
+            btn_text = prod_data["name_ar"] if lang == 'ar' else prod_data["name_en"]
+            markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
+        bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
