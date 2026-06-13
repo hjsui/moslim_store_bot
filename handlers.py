@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي المستقر – جميع الإصلاحات المطلوبة
+# الإصدار النهائي المستقر – جميع الإصلاحات (بما فيها خطأ المبلغ في المفاتيح)
 
 import telebot
 from telebot import types
@@ -68,8 +68,9 @@ def register_all_handlers(bot):
     def show_services_menu(message, lang):
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        markup.add(t["games_services"], t["social_media"])
-        markup.add(t["apps_service"], t["back_to_main"])
+        # ✅ الترتيب الجديد الذي اقترحه المستخدم
+        markup.add(t["games_services"], t["apps_service"])
+        markup.add(t["social_media"], t["back_to_main"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
 
     def show_games_menu(message, lang):
@@ -752,7 +753,6 @@ def register_all_handlers(bot):
             bot.send_message(user_id, "⚠️ " + ("البيانات ناقصة. يرجى إعادة اختيار الخدمة." if lang=='ar' else "Incomplete data. Please select the service again."))
             del user_social_state[user_id]
             return
-        # تخزين بيانات الطلب مؤقتاً
         user_social_state[user_id]['temp_order'] = {
             'service': service,
             'link': link,
@@ -760,7 +760,6 @@ def register_all_handlers(bot):
             'total_price_mad': total_price_mad,
             'platform_name': platform_name
         }
-        # عرض طرق الدفع (سيتم إنشاء الطلب في pay_)
         show_payment_methods(user_id, 'social', f"temp_{user_id}", total_price_mad)
 
     @bot.message_handler(commands=['cancel_social'])
@@ -972,7 +971,6 @@ def register_all_handlers(bot):
         if product_type == 'ff':
             order_id = create_order(user_id, 'ff', product_id, amount)
         elif product_type == 'key':
-            # نستخدم المبلغ المستلم من callback_data مباشرة
             order_id = create_order(user_id, 'key', product_id, amount)
         elif product_type == 'app':
             order_id = create_order(user_id, 'app', product_id, amount)
