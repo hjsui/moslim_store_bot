@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + إصلاح معالجة الإدخال الإداري
+# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
 
 import telebot
 from telebot import types
@@ -8,7 +8,7 @@ from datetime import datetime
 import time
 from config import (
     ADMIN_IDS, WHITELISTED_USERS, STORE_PASSWORD, CHANNEL_PROOFS, ADMIN_CONTACT,
-    codes_inventory, prices, keys_inventory, apps_inventory, LOG_CHANNEL_ID,
+    prices, keys_inventory, apps_inventory, LOG_CHANNEL_ID,
     USD_TO_MAD, DEFAULT_CURRENCY, OWNER_ID
 )
 from database import (
@@ -67,7 +67,6 @@ def register_all_handlers(bot):
         msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
         bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
-    # ✅ الترتيب الجديد حسب طلب المستخدم
     def show_services_menu(message, lang):
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -102,7 +101,6 @@ def register_all_handlers(bot):
         currency = get_user_currency(user_id)
         markup = types.InlineKeyboardMarkup(row_width=2)
         for pkg in prices:
-            # نعرض فقط الباقات التي قد يكون لها كود – ولكننا لا نتحقق من المخزون هنا، فقط نعرض السعر
             price_mad = int(prices[pkg])
             if currency == 'usd':
                 price_display = round(price_mad / USD_TO_MAD, 2)
@@ -185,7 +183,6 @@ def register_all_handlers(bot):
         t = T[lang]
         if accepted:
             if product_type == 'ff':
-                # استخدام قاعدة البيانات لسحب كود
                 code = get_ff_code(product_id)
                 if code:
                     currency = get_user_currency(user_id)
@@ -560,7 +557,6 @@ def register_all_handlers(bot):
                 conn.close()
                 return
 
-        # التحقق من كلمة المرور
         if not verified:
             if message.text == STORE_PASSWORD:
                 c.execute("UPDATE users SET verified=1 WHERE user_id=?", (user_id,))
@@ -818,7 +814,6 @@ def register_all_handlers(bot):
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
-        # التحقق من وجود كود في قاعدة البيانات
         code = get_ff_code(pkg)
         if not code:
             bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
@@ -870,7 +865,6 @@ def register_all_handlers(bot):
             else:
                 price_display = price_mad
                 currency_symbol = t.get("currency_mad", "درهم")
-            # ✅ تمرير السعر في callback_data
             markup.add(types.InlineKeyboardButton(f"{days} DAYS = {price_display} {currency_symbol} 💰", callback_data=f"key_buy_{prod_id}_{days}_{price_mad}"))
         markup.add(types.InlineKeyboardButton(t["back_to_products"], callback_data="back_to_key_products"))
         bot.send_message(call.message.chat.id, t["choose_validity"], reply_markup=markup, parse_mode="Markdown")
@@ -896,7 +890,6 @@ def register_all_handlers(bot):
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
-        # التحقق من وجود المفتاح في قاعدة البيانات
         code = get_key_code(prod_id, days)
         if not code:
             bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
