@@ -3,13 +3,11 @@
 
 import telebot
 from telebot import types
-from config import OWNER_ID, ADMIN_IDS, keys_inventory
+from config import OWNER_ID
 from database import (
     get_ff_stock, add_ff_code, del_ff_code,
     get_key_stock, add_key_code, del_key_code
 )
-from languages import T
-from utils import is_admin
 
 # متغيرات مؤقتة لتخزين حالة المدير أثناء إضافة/حذف
 admin_temp = {}
@@ -65,7 +63,7 @@ def register_admin_handlers(bot):
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
             return
-        admin_temp[user_id] = {'action': 'ff_add', 'step': 'awaiting_quantity_code'}
+        admin_temp[user_id] = {'action': 'ff_add', 'step': 'awaiting_code'}
         bot.edit_message_text("📝 *أرسل الكمية والكود بالصيغة:*\n`الكمية الكود`\nمثال: `110 ABC123`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
@@ -75,7 +73,7 @@ def register_admin_handlers(bot):
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
             return
-        admin_temp[user_id] = {'action': 'ff_del', 'step': 'awaiting_quantity_code'}
+        admin_temp[user_id] = {'action': 'ff_del', 'step': 'awaiting_code'}
         bot.edit_message_text("🗑️ *أرسل الكمية والكود المراد حذفه:*\n`الكمية الكود`\nمثال: `110 ABC123`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
@@ -85,7 +83,7 @@ def register_admin_handlers(bot):
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
             return
-        admin_temp[user_id] = {'action': 'keys_add', 'step': 'awaiting_duration_code'}
+        admin_temp[user_id] = {'action': 'keys_add', 'step': 'awaiting_code'}
         bot.edit_message_text("📝 *أرسل المدة والكود بالصيغة:*\n`المدة الكود`\nالمدة: 1,3,7,15,30\nمثال: `7 KEY789`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
@@ -95,7 +93,7 @@ def register_admin_handlers(bot):
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
             return
-        admin_temp[user_id] = {'action': 'keys_del', 'step': 'awaiting_duration_code'}
+        admin_temp[user_id] = {'action': 'keys_del', 'step': 'awaiting_code'}
         bot.edit_message_text("🗑️ *أرسل المدة والكود المراد حذفه:*\n`المدة الكود`\nمثال: `7 KEY789`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
@@ -111,44 +109,46 @@ def register_admin_handlers(bot):
         bot.edit_message_text("🛠️ *لوحة التحكم الإدارية*\nاختر القسم الذي تريد إدارته:", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
+
 # ========== دالة معالجة الرسائل النصية للإدارة (تُستدعى من handle_messages) ==========
 def process_admin_text(bot, message):
+    """معالجة الرسائل النصية للمدير أثناء جلسة الإضافة/الحذف"""
     user_id = message.from_user.id
     if user_id not in admin_temp:
         return
     data = admin_temp[user_id]
     action = data['action']
-    step = data.get('step')
-    if step == 'awaiting_quantity_code' and action in ['ff_add', 'ff_del']:
-        parts = message.text.split()
-        if len(parts) != 2:
-            bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `الكمية الكود`", parse_mode="Markdown")
-            return
-        quantity, code = parts[0], parts[1]
-        if action == 'ff_add':
-            add_ff_code(quantity, code)
-            bot.reply_to(message, f"✅ تم إضافة الكود `{code}` للكمية {quantity}")
-        else:
-            if del_ff_code(quantity, code):
-                bot.reply_to(message, f"✅ تم حذف الكود `{code}` للكمية {quantity}")
-            else:
-                bot.reply_to(message, f"❌ الكود غير موجود أو مستخدم بالفعل")
+    parts = message.text.split()
+    if len(parts) != 2:
+        bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `الكمية الكود` (لإدارة الجواهر) أو `المدة الكود` (لإدارة المفاتيح)", parse_mode="Markdown")
+        return
+    first, second = parts[0], parts[1]
+    if action == 'ff_add':
+        add_ff_code(first, second)
+        bot.reply_to(message, f"✅ تم إضافة الكود `{second}` للكمية {first}")
         del admin_temp[user_id]
-    elif step == 'awaiting_duration_code' and action in ['keys_add', 'keys_del']:
-        parts = message.text.split()
-        if len(parts) != 2:
-            bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `المدة الكود`\nالمدة: 1,3,7,15,30", parse_mode="Markdown")
-            return
-        duration, code = parts[0], parts[1]
-        if duration not in ['1','3','7','15','30']:
-            bot.reply_to(message, "❌ المدة غير صالحة. اختر: 1,3,7,15,30")
-            return
-        if action == 'keys_add':
-            add_key_code('dripclient', duration, code)
-            bot.reply_to(message, f"✅ تم إضافة المفتاح `{code}` لمدة {duration} أيام")
+    elif action == 'ff_del':
+        if del_ff_code(first, second):
+            bot.reply_to(message, f"✅ تم حذف الكود `{second}` للكمية {first}")
         else:
-            if del_key_code('dripclient', duration, code):
-                bot.reply_to(message, f"✅ تم حذف المفتاح `{code}` لمدة {duration} أيام")
-            else:
-                bot.reply_to(message, f"❌ المفتاح غير موجود")
+            bot.reply_to(message, f"❌ الكود غير موجود أو مستخدم بالفعل")
+        del admin_temp[user_id]
+    elif action == 'keys_add':
+        if first not in ['1', '3', '7', '15', '30']:
+            bot.reply_to(message, "❌ المدة غير صالحة. اختر: 1, 3, 7, 15, 30")
+            return
+        add_key_code('dripclient', first, second)
+        bot.reply_to(message, f"✅ تم إضافة المفتاح `{second}` لمدة {first} أيام")
+        del admin_temp[user_id]
+    elif action == 'keys_del':
+        if first not in ['1', '3', '7', '15', '30']:
+            bot.reply_to(message, "❌ المدة غير صالحة. اختر: 1, 3, 7, 15, 30")
+            return
+        if del_key_code('dripclient', first, second):
+            bot.reply_to(message, f"✅ تم حذف المفتاح `{second}` لمدة {first} أيام")
+        else:
+            bot.reply_to(message, f"❌ المفتاح غير موجود")
+        del admin_temp[user_id]
+    else:
+        bot.reply_to(message, "⚠️ حدث خطأ غير متوقع. أعد المحاولة.")
         del admin_temp[user_id]
