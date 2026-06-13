@@ -13,7 +13,7 @@ ADMIN_IDS = [8530485909]          # قائمة المديرين (قبول الط
 WHITELISTED_USERS = [8615239297]   # قائمة الوكلاء الذين يسحبون مجاناً
 STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
 CHANNEL_PROOFS = "https://t.me/moslim_store1"
-ADMIN_CONTACT = "https://t.me/MOSLIM_SHOP"
+ADMIN_CONTACT = "https://t.me/Mibel_Store"
 
 # ------------------- المخزون الحالي -------------------
 codes_inventory = {
