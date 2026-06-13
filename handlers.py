@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
+# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون (تم إصلاح مشكلة out of stock)
 
 import telebot
 from telebot import types
@@ -306,7 +306,7 @@ def register_all_handlers(bot):
                 except:
                     pass
 
-    # ========== دوال السوشل ميديا ==========
+    # ========== دوال السوشل ميديا (بدون تغيير) ==========
     def show_social_platforms(user_id, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
@@ -498,7 +498,7 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # ========== الأولوية القصوى: التعامل مع الإدارة إذا كان المستخدم هو المالك وهناك عملية إدارة نشطة ==========
+        # ========== الأولوية القصوى: التعامل مع الإدارة ==========
         if user_id == OWNER_ID and user_id in admin_temp:
             process_admin_text(bot, message)
             conn.close()
@@ -625,7 +625,7 @@ def register_all_handlers(bot):
             bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
         conn.close()
 
-    # ========== كول باك السوشل ميديا ==========
+    # ========== كول باك السوشل ميديا (بدون تغيير) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('social_platform_'))
     def social_platform_selected(call):
         user_id = call.from_user.id
@@ -807,13 +807,14 @@ def register_all_handlers(bot):
         else:
             bot.send_message(message.chat.id, "❌ " + ("لم نتمكن من جلب حالة الطلب." if get_lang(message.chat.id)=='ar' else "Could not fetch order status."))
 
-    # ========== شراء الجواهر (للقائمة البيضاء والدفع) ==========
+    # ========== شراء الجواهر (للقائمة البيضاء والدفع) – تم التأكيد على استخدام get_ff_code ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
     def process_purchase(call):
         pkg = call.data.split('_')[1]
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
+        # ✅ استخدم قاعدة البيانات للحصول على كود غير مستخدم
         code = get_ff_code(pkg)
         if not code:
             bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
