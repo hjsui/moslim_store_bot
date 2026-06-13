@@ -30,39 +30,44 @@ def init_db():
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, duration TEXT, code TEXT, used INTEGER DEFAULT 0)''')
     conn.commit()
     conn.close()
-    # ترحيل الأكواد القديمة من config.py إلى قاعدة البيانات (مرة واحدة)
+    # ترحيل الأكواد القديمة (يحدث مرة واحدة فقط عند أول تشغيل)
     migrate_ff_codes()
     migrate_key_codes()
 
-# ========== ترحيل الأكواد القديمة ==========
 def migrate_ff_codes():
-    """نقل الأكواد من config.py (إن وجدت) إلى جدول ff_codes"""
+    """نقل الأكواد من config.py إلى جدول ff_codes إذا كان الجدول فارغاً"""
     from config import codes_inventory
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM ff_codes")
-    if c.fetchone()[0] == 0:
+    count = c.fetchone()[0]
+    if count == 0:
         for qty, codes in codes_inventory.items():
             for code in codes:
-                c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (qty, code))
+                if code and code.strip():  # تأكد من أن الكود ليس فارغاً
+                    c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (qty, code))
         conn.commit()
+        print(f"✅ تم ترحيل {c.rowcount} كود جواهر إلى قاعدة البيانات")
     conn.close()
 
 def migrate_key_codes():
-    """نقل المفاتيح من config.py إلى جدول key_codes"""
+    """نقل المفاتيح من config.py إلى جدول key_codes إذا كان الجدول فارغاً"""
     from config import keys_inventory
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM key_codes")
-    if c.fetchone()[0] == 0:
+    count = c.fetchone()[0]
+    if count == 0:
         for prod_id, prod_data in keys_inventory.items():
             for duration, codes in prod_data["codes"].items():
                 for code in codes:
-                    c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, duration, code))
+                    if code and code.strip():
+                        c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, duration, code))
         conn.commit()
+        print(f"✅ تم ترحيل {c.rowcount} مفتاح إلى قاعدة البيانات")
     conn.close()
 
-# ========== دوال المستخدم ==========
+# بقية دوال قاعدة البيانات كما هي (get_lang, set_lang, إلخ)
 def get_lang(user_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -126,7 +131,6 @@ def get_order(order_id):
     conn.close()
     return row
 
-# دوال social_orders
 def save_social_order(user_id, service_id, link, quantity, amount, api_order_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -142,7 +146,6 @@ def update_social_order_status(api_order_id, status):
     conn.commit()
     conn.close()
 
-# دوال العملة
 def get_user_currency(user_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -158,9 +161,8 @@ def set_user_currency(user_id, currency):
     conn.commit()
     conn.close()
 
-# ========== دوال إدارة المخزون (الجواهر والمفاتيح) ==========
+# دوال إدارة المخزون
 def get_ff_code(quantity):
-    """استرجاع كود غير مستخدم من الكمية المطلوبة وتمييزه كمستخدم"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT id, code FROM ff_codes WHERE quantity=? AND used=0 LIMIT 1", (quantity,))
