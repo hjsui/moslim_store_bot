@@ -306,7 +306,7 @@ def register_all_handlers(bot):
                 except:
                     pass
 
-    # ========== دوال السوشل ميديا (بدون تغيير) ==========
+    # ========== دوال السوشل ميديا ==========
     def show_social_platforms(user_id, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
@@ -625,7 +625,7 @@ def register_all_handlers(bot):
             bot.send_message(message.chat.id, t["default_reply"].format(CHANNEL_PROOFS), parse_mode="Markdown")
         conn.close()
 
-    # ========== كول باك السوشل ميديا (بدون تغيير) ==========
+    # ========== كول باك السوشل ميديا ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('social_platform_'))
     def social_platform_selected(call):
         user_id = call.from_user.id
