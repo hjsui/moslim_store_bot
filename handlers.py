@@ -65,12 +65,12 @@ def register_all_handlers(bot):
         msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
         bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
+    # ✅ الترتيب الجديد حسب طلب المستخدم
     def show_services_menu(message, lang):
         t = T[lang]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        # ✅ الترتيب الجديد الذي اقترحه المستخدم
-        markup.add(t["games_services"], t["apps_service"])
-        markup.add(t["social_media"], t["back_to_main"])
+        markup.add(t["apps_service"], t["games_services"])
+        markup.add(t["back_to_main"], t["social_media"])
         bot.send_message(message.chat.id, t["choose_section"], reply_markup=markup, parse_mode="Markdown")
 
     def show_games_menu(message, lang):
