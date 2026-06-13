@@ -30,7 +30,7 @@ def init_db():
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, duration TEXT, code TEXT, used INTEGER DEFAULT 0)''')
     conn.commit()
     conn.close()
-    # ترحيل الأكواد القديمة (يحدث مرة واحدة فقط عند أول تشغيل)
+    # ترحيل الأكواد القديمة (يجبر الترحيل إذا كان الجدول فارغاً)
     migrate_ff_codes()
     migrate_key_codes()
 
@@ -75,6 +75,7 @@ def migrate_key_codes():
         print(f"✅ تم ترحيل المفاتيح إلى قاعدة البيانات")
     conn.close()
 
+# دوال المستخدم الأساسية (دون تغيير)
 def get_lang(user_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -168,7 +169,7 @@ def set_user_currency(user_id, currency):
     conn.commit()
     conn.close()
 
-# ========== دوال إدارة المخزون ==========
+# ========== دوال إدارة المخزون (الجواهر والمفاتيح) ==========
 def get_ff_code(quantity):
     """استرجاع كود غير مستخدم من الكمية المطلوبة وتمييزه كمستخدم"""
     conn = sqlite3.connect('moslim_store.db')
