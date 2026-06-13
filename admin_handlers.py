@@ -1,0 +1,155 @@
+# admin_handlers.py
+# جميع دوال لوحة التحكم الإدارية (للمدير فقط)
+
+import telebot
+from telebot import types
+from config import OWNER_ID, ADMIN_IDS, keys_inventory
+from database import (
+    get_ff_stock, add_ff_code, del_ff_code,
+    get_key_stock, add_key_code, del_key_code
+)
+from languages import T
+from utils import is_admin
+
+# متغيرات مؤقتة لتخزين حالة المدير أثناء إضافة/حذف
+admin_temp = {}
+
+def register_admin_handlers(bot):
+    """تسجيل جميع معالجات لوحة التحكم الإدارية"""
+
+    @bot.callback_query_handler(func=lambda call: call.data == "admin_ff")
+    def admin_ff_menu(call):
+        user_id = call.from_user.id
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        stock = get_ff_stock()
+        if not stock:
+            stock_text = "📦 *مخزون الجواهر فارغ*"
+        else:
+            lines = ["📊 *مخزون جواهر فري فاير:*"]
+            for qty, count in stock:
+                lines.append(f"💎 {qty} جوهرة : {count} كود")
+            stock_text = "\n".join(lines)
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        markup.add(types.InlineKeyboardButton("➕ إضافة كود", callback_data="admin_ff_add"))
+        markup.add(types.InlineKeyboardButton("➖ حذف كود", callback_data="admin_ff_del"))
+        markup.add(types.InlineKeyboardButton("🔙 رجوع", callback_data="admin_back"))
+        bot.edit_message_text(stock_text, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "admin_keys")
+    def admin_keys_menu(call):
+        user_id = call.from_user.id
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        stock = get_key_stock()
+        if not stock:
+            stock_text = "📦 *مخزون المفاتيح فارغ*"
+        else:
+            lines = ["📊 *مخزون مفاتيح DRIP CLIENT:*"]
+            for prod, dur, count in stock:
+                lines.append(f"🔑 {prod} - {dur} يوم : {count} مفتاح")
+            stock_text = "\n".join(lines)
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        markup.add(types.InlineKeyboardButton("➕ إضافة مفتاح", callback_data="admin_keys_add"))
+        markup.add(types.InlineKeyboardButton("➖ حذف مفتاح", callback_data="admin_keys_del"))
+        markup.add(types.InlineKeyboardButton("🔙 رجوع", callback_data="admin_back"))
+        bot.edit_message_text(stock_text, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "admin_ff_add")
+    def admin_ff_add_prompt(call):
+        user_id = call.from_user.id
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        admin_temp[user_id] = {'action': 'ff_add', 'step': 'awaiting_quantity_code'}
+        bot.edit_message_text("📝 *أرسل الكمية والكود بالصيغة:*\n`الكمية الكود`\nمثال: `110 ABC123`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "admin_ff_del")
+    def admin_ff_del_prompt(call):
+        user_id = call.from_user.id
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        admin_temp[user_id] = {'action': 'ff_del', 'step': 'awaiting_quantity_code'}
+        bot.edit_message_text("🗑️ *أرسل الكمية والكود المراد حذفه:*\n`الكمية الكود`\nمثال: `110 ABC123`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "admin_keys_add")
+    def admin_keys_add_prompt(call):
+        user_id = call.from_user.id
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        admin_temp[user_id] = {'action': 'keys_add', 'step': 'awaiting_duration_code'}
+        bot.edit_message_text("📝 *أرسل المدة والكود بالصيغة:*\n`المدة الكود`\nالمدة: 1,3,7,15,30\nمثال: `7 KEY789`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "admin_keys_del")
+    def admin_keys_del_prompt(call):
+        user_id = call.from_user.id
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        admin_temp[user_id] = {'action': 'keys_del', 'step': 'awaiting_duration_code'}
+        bot.edit_message_text("🗑️ *أرسل المدة والكود المراد حذفه:*\n`المدة الكود`\nمثال: `7 KEY789`", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda call: call.data == "admin_back")
+    def admin_back(call):
+        user_id = call.from_user.id
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "غير مسموح", show_alert=True)
+            return
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(types.InlineKeyboardButton("📊 إدارة جواهر فري فاير", callback_data="admin_ff"))
+        markup.add(types.InlineKeyboardButton("🔑 إدارة مفاتيح DRIP CLIENT", callback_data="admin_keys"))
+        bot.edit_message_text("🛠️ *لوحة التحكم الإدارية*\nاختر القسم الذي تريد إدارته:", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        bot.answer_callback_query(call.id)
+
+    # ========== معالج الرسائل النصية للإدارة (إضافة/حذف) ==========
+    @bot.message_handler(func=lambda msg: msg.from_user.id == OWNER_ID and msg.text and not msg.text.startswith('/'))
+    def admin_text_handler(message):
+        user_id = message.from_user.id
+        if user_id not in admin_temp:
+            return
+        data = admin_temp[user_id]
+        action = data['action']
+        step = data.get('step')
+        if step == 'awaiting_quantity_code' and action in ['ff_add', 'ff_del']:
+            parts = message.text.split()
+            if len(parts) != 2:
+                bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `الكمية الكود`", parse_mode="Markdown")
+                return
+            quantity, code = parts[0], parts[1]
+            if action == 'ff_add':
+                add_ff_code(quantity, code)
+                bot.reply_to(message, f"✅ تم إضافة الكود `{code}` للكمية {quantity}")
+            else:
+                if del_ff_code(quantity, code):
+                    bot.reply_to(message, f"✅ تم حذف الكود `{code}` للكمية {quantity}")
+                else:
+                    bot.reply_to(message, f"❌ الكود غير موجود أو مستخدم بالفعل")
+            del admin_temp[user_id]
+        elif step == 'awaiting_duration_code' and action in ['keys_add', 'keys_del']:
+            parts = message.text.split()
+            if len(parts) != 2:
+                bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `المدة الكود`\nالمدة: 1,3,7,15,30", parse_mode="Markdown")
+                return
+            duration, code = parts[0], parts[1]
+            if duration not in ['1','3','7','15','30']:
+                bot.reply_to(message, "❌ المدة غير صالحة. اختر: 1,3,7,15,30")
+                return
+            if action == 'keys_add':
+                add_key_code('dripclient', duration, code)
+                bot.reply_to(message, f"✅ تم إضافة المفتاح `{code}` لمدة {duration} أيام")
+            else:
+                if del_key_code('dripclient', duration, code):
+                    bot.reply_to(message, f"✅ تم حذف المفتاح `{code}` لمدة {duration} أيام")
+                else:
+                    bot.reply_to(message, f"❌ المفتاح غير موجود")
+            del admin_temp[user_id]
