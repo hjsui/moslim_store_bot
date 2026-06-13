@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي المستقر – مع إضافة الصورة الترحيبية والنص العلوي
+# الإصدار النهائي المستقر – جميع الإصلاحات (بما فيها خطأ المبلغ في المفاتيح)
 
 import telebot
 from telebot import types
@@ -53,22 +53,17 @@ def register_all_handlers(bot):
                    types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"))
         bot.send_photo(chat_id, photo=photo_url, caption=caption, parse_mode="Markdown", reply_markup=markup)
 
-    # ✅ الدالة المعدلة: إرسال صورة + نص (caption) + أزرار
     def show_main_menu(message, lang):
         t = T[lang]
-        # رابط الصورة (يمكنك تغييره)
-        photo_url = "https://i.postimg.cc/g2Dtfh3L/Picsart-26-01-29-07-31-38-423.jpg"
-        # النص العلوي (caption)
-        caption = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(get_verified_count())
-        # الأزرار
         markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         markup.row(t["shop_now"], t["services"])
         markup.row(t["add_balance"], t["profile"])
         markup.row(t["change_language"], t["change_currency"])
         markup.row(t["how_to_use"], t["support"])
         markup.row(t["proofs"])
-        # إرسال الصورة مع الـ caption والأزرار
-        bot.send_photo(message.chat.id, photo=photo_url, caption=caption, reply_markup=markup, parse_mode="Markdown")
+        user_count = get_verified_count()
+        msg = t["welcome_main"].format(message.from_user.first_name, CHANNEL_PROOFS) + t["user_count"].format(user_count)
+        bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
     def show_services_menu(message, lang):
         t = T[lang]
@@ -312,7 +307,6 @@ def register_all_handlers(bot):
                     pass
 
     # ========== دوال السوشل ميديا ==========
-    # (جميع دوال السوشل ميديا موجودة كما هي – لم تتغير)
     def show_social_platforms(user_id, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
