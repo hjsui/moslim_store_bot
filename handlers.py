@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية
+# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + دعم قاعدة البيانات للأكواد
 
 import telebot
 from telebot import types
@@ -14,7 +14,8 @@ from config import (
 from database import (
     get_lang, set_lang, get_verified_count, add_purchase_record,
     create_order, update_order_status, get_order,
-    get_user_currency, set_user_currency
+    get_user_currency, set_user_currency,
+    get_ff_code, get_key_code       # ✅ دوال الأكواد من قاعدة البيانات
 )
 from utils import is_admin, is_whitelisted
 from payment_methods import PAYMENT_METHODS
@@ -100,8 +101,8 @@ def register_all_handlers(bot):
         user_id = message.from_user.id
         currency = get_user_currency(user_id)
         markup = types.InlineKeyboardMarkup(row_width=2)
-        for pkg in codes_inventory:
-            if codes_inventory[pkg]:
+        for pkg in prices:  # ✅ استخدام prices فقط، الكود من قاعدة البيانات
+            if get_ff_code(pkg):  # نتحقق من وجود كود في قاعدة البيانات
                 price_mad = int(prices[pkg])
                 if currency == 'usd':
                     price_display = round(price_mad / USD_TO_MAD, 2)
@@ -150,11 +151,29 @@ def register_all_handlers(bot):
             amount_display = amount
             currency_symbol = t.get("currency_mad", "درهم")
         markup = types.InlineKeyboardMarkup(row_width=1)
+        method = None
         for key, method in PAYMENT_METHODS.items():
             name = method["name_ar"] if lang == 'ar' else method["name_en"]
             markup.add(types.InlineKeyboardButton(name, callback_data=f"pay_{key}_{product_type}_{product_id}_{amount}"))
-        msg = f"<b>{t['payment_method_label']}</b>\n━━━━━━━━━━━━\n<b>{t['amount']}</b> {amount_display} {currency_symbol}\n\n{t['payment_instructions']}"
-        bot.send_message(user_id, msg, reply_markup=markup, parse_mode="HTML")
+        instructions = (f"<b>{t['payment_method_label']}</b> {method['name_ar'] if lang=='ar' else method['name_en']}\n"
+                        f"━━━━━━━━━━━━\n{method['details_ar'] if lang=='ar' else method['details_en']}\n\n"
+                        f"<b>{t['amount']}</b> {amount_display} {currency_symbol}\n"
+                        f"<b>{t['order_id_label']}</b> <code>{order_id}</code>\n\n"
+                        f"{t['payment_instructions']}")
+        markup.add(types.InlineKeyboardButton("📸 " + ("أرسل الإيصال" if lang=='ar' else "Send receipt"), callback_data=f"send_proof_{order_id}"))
+        markup.add(types.InlineKeyboardButton("🔄 " + ("تغيير طريقة الدفع" if lang=='ar' else "Change payment method"), callback_data=f"change_payment_{order_id}"))
+        bot.send_message(user_id, instructions, reply_markup=markup, parse_mode="HTML")
+
+    def purchase_ff_package(user_id, pkg, lang):
+        amount = int(prices[pkg])
+        order_id = create_order(user_id, 'ff', pkg, amount)
+        show_payment_methods(user_id, 'ff', pkg, amount, order_id)
+
+    def purchase_key(user_id, days, lang):
+        amount = keys_inventory['dripclient']['prices'][days]
+        product_id = f"dripclient_{days}"
+        order_id = create_order(user_id, 'key', product_id, amount)
+        show_payment_methods(user_id, 'key', product_id, amount, order_id)
 
     def send_withdrawal_log(admin_username, product_name, price, extra_info="", code_or_link=None):
         if not LOG_CHANNEL_ID:
@@ -184,8 +203,9 @@ def register_all_handlers(bot):
         t = T[lang]
         if accepted:
             if product_type == 'ff':
-                if product_id in codes_inventory and codes_inventory[product_id]:
-                    code = codes_inventory[product_id].pop(0)
+                # ✅ استخدام قاعدة البيانات
+                code = get_ff_code(product_id)
+                if code:
                     currency = get_user_currency(user_id)
                     if currency == 'usd':
                         amount_display = round(amount / USD_TO_MAD, 2)
@@ -209,8 +229,8 @@ def register_all_handlers(bot):
                 parts = product_id.split('_')
                 if len(parts) == 2:
                     key_id, days = parts[0], parts[1]
-                    if key_id in keys_inventory and days in keys_inventory[key_id]["codes"] and keys_inventory[key_id]["codes"][days]:
-                        code = keys_inventory[key_id]["codes"][days].pop(0)
+                    code = get_key_code(key_id, days)
+                    if code:
                         product_name = keys_inventory[key_id]["name_ar"] if lang == 'ar' else keys_inventory[key_id]["name_en"]
                         currency = get_user_currency(user_id)
                         if currency == 'usd':
@@ -773,7 +793,10 @@ def register_all_handlers(bot):
             'total_price_mad': total_price_mad,
             'platform_name': platform_name
         }
-        show_payment_methods(user_id, 'social', f"temp_{user_id}", total_price_mad)
+        # إنشاء الطلب في قاعدة البيانات
+        api_payload = f"social|temp_{user_id}"
+        order_id = create_order(user_id, 'social', api_payload, total_price_mad)
+        show_payment_methods(user_id, 'social', api_payload, total_price_mad, order_id)
 
     @bot.message_handler(commands=['cancel_social'])
     def cancel_social_order(message):
@@ -809,11 +832,12 @@ def register_all_handlers(bot):
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
-        if pkg not in codes_inventory or not codes_inventory[pkg]:
+        # ✅ استخدام قاعدة البيانات
+        code = get_ff_code(pkg)
+        if not code:
             bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
             return
         if is_whitelisted(user_id):
-            code = codes_inventory[pkg].pop(0)
             currency = get_user_currency(user_id)
             if currency == 'usd':
                 price_display = round(int(prices[pkg]) / USD_TO_MAD, 2)
@@ -838,7 +862,7 @@ def register_all_handlers(bot):
                     pass
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
-            show_payment_methods(user_id, 'ff', pkg, int(prices[pkg]))
+            purchase_ff_package(user_id, pkg, lang)
             bot.answer_callback_query(call.id)
 
     # ========== اختيار مدة المفتاح ==========
@@ -886,11 +910,12 @@ def register_all_handlers(bot):
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
-        if prod_id not in keys_inventory or days not in keys_inventory[prod_id]["codes"] or not keys_inventory[prod_id]["codes"][days]:
+        # ✅ استخدام قاعدة البيانات للمفاتيح
+        code = get_key_code(prod_id, days)
+        if not code:
             bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
             return
         if is_whitelisted(user_id):
-            code = keys_inventory[prod_id]["codes"][days].pop(0)
             product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
             currency = get_user_currency(user_id)
             if currency == 'usd':
@@ -916,7 +941,7 @@ def register_all_handlers(bot):
                     pass
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
-            show_payment_methods(user_id, 'key', f"dripclient_{days}", price_mad)
+            purchase_key(user_id, days, lang)
             bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('app_buy_'))
@@ -957,7 +982,9 @@ def register_all_handlers(bot):
                     pass
             bot.answer_callback_query(call.id, "🎉 " + ("تم تسليم التطبيق بنجاح!" if lang=='ar' else "App delivered successfully!"))
         else:
-            show_payment_methods(user_id, 'app', app_id, app_data["price"])
+            price = app_data["price"]
+            order_id = create_order(user_id, 'app', app_id, price)
+            show_payment_methods(user_id, 'app', app_id, price, order_id)
             bot.answer_callback_query(call.id)
 
     # ========== معالجات الدفع الرئيسية ==========
@@ -975,11 +1002,13 @@ def register_all_handlers(bot):
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
         c.execute("SELECT order_id FROM orders WHERE user_id=? AND status IN ('pending', 'waiting_admin')", (user_id,))
-        if c.fetchone():
+        row = c.fetchone()
+        if row:
             bot.answer_callback_query(call.id, t["already_paid"], show_alert=True)
             conn.close()
             return
         conn.close()
+        # إنشاء الطلب هنا (تم إنشاؤه مسبقاً في purchase_ff_package وغيره، لكن نضمن وجوده)
         order_id = None
         if product_type == 'ff':
             order_id = create_order(user_id, 'ff', product_id, amount)
@@ -1033,7 +1062,7 @@ def register_all_handlers(bot):
             return
         update_order_status(order_id, 'cancelled', admin_action='user_cancelled')
         product_type, product_id, amount = order[2], order[3], order[4]
-        show_payment_methods(user_id, product_type, product_id, amount)
+        show_payment_methods(user_id, product_type, product_id, amount, order_id)
         bot.answer_callback_query(call.id, "✅ " + ("يمكنك اختيار طريقة دفع جديدة" if lang=='ar' else "You can choose a new payment method"))
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('send_proof_'))
