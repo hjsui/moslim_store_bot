@@ -484,7 +484,7 @@ def register_all_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         show_main_menu(call.message, lang)
 
-    # ========== المعالج الرئيسي للرسائل النصية (مع دمج معالجة الإدارة) ==========
+    # ========== المعالج الرئيسي للرسائل النصية ==========
     @bot.message_handler(func=lambda msg: True, content_types=['text'])
     def handle_messages(message):
         user_id = message.from_user.id
@@ -498,7 +498,7 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # ========== الأولوية القصوى: التعامل مع الإدارة ==========
+        # الأولوية: معالجة الإدارة
         if user_id == OWNER_ID and user_id in admin_temp:
             process_admin_text(bot, message)
             conn.close()
@@ -807,14 +807,13 @@ def register_all_handlers(bot):
         else:
             bot.send_message(message.chat.id, "❌ " + ("لم نتمكن من جلب حالة الطلب." if get_lang(message.chat.id)=='ar' else "Could not fetch order status."))
 
-    # ========== شراء الجواهر (للقائمة البيضاء والدفع) – تم التأكيد على استخدام get_ff_code ==========
+    # ========== شراء الجواهر (للقائمة البيضاء والدفع) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
     def process_purchase(call):
         pkg = call.data.split('_')[1]
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
-        # ✅ استخدم قاعدة البيانات للحصول على كود غير مستخدم
         code = get_ff_code(pkg)
         if not code:
             bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
