@@ -10,6 +10,7 @@ else:
 
 # ------------------- ثوابت المتجر -------------------
 ADMIN_IDS = [8530485909]          # قائمة المديرين (قبول الطلبات)
+OWNER_ID = 8530485909             # المالك الوحيد (للأوامر الإدارية مثل /meow)
 WHITELISTED_USERS = [8615239297]   # قائمة الوكلاء الذين يسحبون مجاناً
 STORE_PASSWORD = "555451265696++ftytyuiuliyty6654923//fyytu@moslim.com"
 CHANNEL_PROOFS = "https://t.me/moslim_store1"
