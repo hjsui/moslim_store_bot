@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون (تم إصلاح مشكلة out of stock)
+# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
 
 import telebot
 from telebot import types
@@ -306,7 +306,7 @@ def register_all_handlers(bot):
                 except:
                     pass
 
-    # ========== دوال السوشل ميديا ==========
+    # ========== دوال السوشل ميديا (غير معدلة) ==========
     def show_social_platforms(user_id, lang):
         t = T[lang]
         markup = types.InlineKeyboardMarkup(row_width=2)
@@ -434,7 +434,7 @@ def register_all_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, T[lang]["welcome_after_lang"].format(CHANNEL_PROOFS), parse_mode="Markdown")
 
-    # ========== تغيير اللغة (قائمة اختيار) ==========
+    # ========== تغيير اللغة ==========
     @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)].get("change_language", ""))
     def change_language_button(message):
         user_id = message.from_user.id
@@ -457,7 +457,7 @@ def register_all_handlers(bot):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         show_main_menu(call.message, 'en')
 
-    # ========== تغيير العملة (قائمة اختيار) ==========
+    # ========== تغيير العملة ==========
     @bot.message_handler(func=lambda msg: msg.text == T[get_lang(msg.from_user.id)].get("change_currency", ""))
     def change_currency_button(message):
         user_id = message.from_user.id
@@ -498,7 +498,7 @@ def register_all_handlers(bot):
         verified, lang = user
         t = T[lang]
 
-        # الأولوية: معالجة الإدارة
+        # معالجة الإدارة (للمالك فقط)
         if user_id == OWNER_ID and user_id in admin_temp:
             process_admin_text(bot, message)
             conn.close()
@@ -807,7 +807,7 @@ def register_all_handlers(bot):
         else:
             bot.send_message(message.chat.id, "❌ " + ("لم نتمكن من جلب حالة الطلب." if get_lang(message.chat.id)=='ar' else "Could not fetch order status."))
 
-    # ========== شراء الجواهر (للقائمة البيضاء والدفع) ==========
+    # ========== شراء الجواهر ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
     def process_purchase(call):
         pkg = call.data.split('_')[1]
@@ -846,7 +846,7 @@ def register_all_handlers(bot):
             show_payment_methods(user_id, 'ff', pkg, int(prices[pkg]))
             bot.answer_callback_query(call.id)
 
-    # ========== اختيار مدة المفتاح ==========
+    # ========== شراء المفاتيح ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
     def choose_duration(call):
         prod_id = call.data.split('_')[2]
@@ -923,6 +923,7 @@ def register_all_handlers(bot):
             show_payment_methods(user_id, 'key', f"dripclient_{days}", price_mad)
             bot.answer_callback_query(call.id)
 
+    # ========== شراء التطبيقات ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('app_buy_'))
     def process_app_purchase(call):
         app_id = call.data.split('_')[2]
@@ -964,7 +965,7 @@ def register_all_handlers(bot):
             show_payment_methods(user_id, 'app', app_id, app_data["price"])
             bot.answer_callback_query(call.id)
 
-    # ========== معالجات الدفع الرئيسية ==========
+    # ========== معالجات الدفع ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
     def handle_payment_method(call):
         parts = call.data.split('_', 4)
