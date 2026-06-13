@@ -9,7 +9,6 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (user_id INTEGER PRIMARY KEY, username TEXT, verified INTEGER, 
                   purchases TEXT, join_date TEXT, language TEXT DEFAULT 'ar')''')
-    # ✅ إضافة عمود العملة (إذا لم يكن موجوداً)
     try:
         c.execute("ALTER TABLE users ADD COLUMN currency TEXT DEFAULT 'mad'")
     except sqlite3.OperationalError:
@@ -25,14 +24,45 @@ def init_db():
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, service_id INTEGER,
                   link TEXT, quantity INTEGER, amount REAL, api_order_id INTEGER,
                   status TEXT, created_at TEXT)''')
-    # ✅ جداول إدارة المخزون
     c.execute('''CREATE TABLE IF NOT EXISTS ff_codes
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, quantity TEXT, code TEXT, used INTEGER DEFAULT 0)''')
     c.execute('''CREATE TABLE IF NOT EXISTS key_codes
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, duration TEXT, code TEXT, used INTEGER DEFAULT 0)''')
     conn.commit()
     conn.close()
+    # ترحيل الأكواد القديمة من config.py إلى قاعدة البيانات (مرة واحدة)
+    migrate_ff_codes()
+    migrate_key_codes()
 
+# ========== ترحيل الأكواد القديمة ==========
+def migrate_ff_codes():
+    """نقل الأكواد من config.py (إن وجدت) إلى جدول ff_codes"""
+    from config import codes_inventory
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM ff_codes")
+    if c.fetchone()[0] == 0:
+        for qty, codes in codes_inventory.items():
+            for code in codes:
+                c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (qty, code))
+        conn.commit()
+    conn.close()
+
+def migrate_key_codes():
+    """نقل المفاتيح من config.py إلى جدول key_codes"""
+    from config import keys_inventory
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM key_codes")
+    if c.fetchone()[0] == 0:
+        for prod_id, prod_data in keys_inventory.items():
+            for duration, codes in prod_data["codes"].items():
+                for code in codes:
+                    c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, duration, code))
+        conn.commit()
+    conn.close()
+
+# ========== دوال المستخدم ==========
 def get_lang(user_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -96,7 +126,7 @@ def get_order(order_id):
     conn.close()
     return row
 
-# دوال لجدول social_orders
+# دوال social_orders
 def save_social_order(user_id, service_id, link, quantity, amount, api_order_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -128,20 +158,22 @@ def set_user_currency(user_id, currency):
     conn.commit()
     conn.close()
 
-# ========== دوال إدارة المخزون (للوحة التحكم الإدارية) ==========
-
-# جواهر فري فاير
-def get_ff_stock():
-    """إرجاع قائمة بكميات الجواهر وعدد الأكواد غير المستخدمة"""
+# ========== دوال إدارة المخزون (الجواهر والمفاتيح) ==========
+def get_ff_code(quantity):
+    """استرجاع كود غير مستخدم من الكمية المطلوبة وتمييزه كمستخدم"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    c.execute("SELECT quantity, COUNT(*) FROM ff_codes WHERE used=0 GROUP BY quantity")
-    rows = c.fetchall()
+    c.execute("SELECT id, code FROM ff_codes WHERE quantity=? AND used=0 LIMIT 1", (quantity,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE ff_codes SET used=1 WHERE id=?", (row[0],))
+        conn.commit()
+        conn.close()
+        return row[1]
     conn.close()
-    return rows
+    return None
 
 def add_ff_code(quantity, code):
-    """إضافة كود جديد لجواهر فري فاير"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (quantity, code))
@@ -149,7 +181,6 @@ def add_ff_code(quantity, code):
     conn.close()
 
 def del_ff_code(quantity, code):
-    """حذف كود جواهر فري فاير (غير مستخدم)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("DELETE FROM ff_codes WHERE quantity=? AND code=? AND used=0 LIMIT 1", (quantity, code))
@@ -157,18 +188,28 @@ def del_ff_code(quantity, code):
     conn.close()
     return c.rowcount > 0
 
-# مفاتيح DRIP CLIENT
-def get_key_stock():
-    """إرجاع قائمة بمعرف المنتج والمدة وعدد المفاتيح غير المستخدمة"""
+def get_ff_stock():
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    c.execute("SELECT product_id, duration, COUNT(*) FROM key_codes WHERE used=0 GROUP BY product_id, duration")
+    c.execute("SELECT quantity, COUNT(*) FROM ff_codes WHERE used=0 GROUP BY quantity")
     rows = c.fetchall()
     conn.close()
     return rows
 
+def get_key_code(product_id, duration):
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT id, code FROM key_codes WHERE product_id=? AND duration=? AND used=0 LIMIT 1", (product_id, duration))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE key_codes SET used=1 WHERE id=?", (row[0],))
+        conn.commit()
+        conn.close()
+        return row[1]
+    conn.close()
+    return None
+
 def add_key_code(product_id, duration, code):
-    """إضافة مفتاح جديد لـ DRIP CLIENT"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (product_id, duration, code))
@@ -176,10 +217,17 @@ def add_key_code(product_id, duration, code):
     conn.close()
 
 def del_key_code(product_id, duration, code):
-    """حذف مفتاح DRIP CLIENT (غير مستخدم)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("DELETE FROM key_codes WHERE product_id=? AND duration=? AND code=? AND used=0 LIMIT 1", (product_id, duration, code))
     conn.commit()
     conn.close()
     return c.rowcount > 0
+
+def get_key_stock():
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    c.execute("SELECT product_id, duration, COUNT(*) FROM key_codes WHERE used=0 GROUP BY product_id, duration")
+    rows = c.fetchall()
+    conn.close()
+    return rows
