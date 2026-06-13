@@ -1,5 +1,5 @@
 # handlers.py
-# الإصدار النهائي المستقر – جميع الإصلاحات (بما فيها خطأ المبلغ في المفاتيح)
+# الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية
 
 import telebot
 from telebot import types
@@ -9,7 +9,7 @@ import time
 from config import (
     ADMIN_IDS, WHITELISTED_USERS, STORE_PASSWORD, CHANNEL_PROOFS, ADMIN_CONTACT,
     codes_inventory, prices, keys_inventory, apps_inventory, LOG_CHANNEL_ID,
-    USD_TO_MAD, DEFAULT_CURRENCY
+    USD_TO_MAD, DEFAULT_CURRENCY, OWNER_ID
 )
 from database import (
     get_lang, set_lang, get_verified_count, add_purchase_record,
@@ -27,6 +27,7 @@ from social_structure import (
     SOCIAL_STRUCTURE, get_categories_list, get_subcategories_list,
     get_service_ids_from_structure
 )
+from admin_handlers import register_admin_handlers
 
 user_social_state = {}
 _services_cache = None
@@ -412,6 +413,18 @@ def register_all_handlers(bot):
         else:
             bot.send_message(message.chat.id, T[lang]["ask_password"], parse_mode="Markdown")
         conn.close()
+
+    # ========== أمر المدير /meow ==========
+    @bot.message_handler(commands=['meow'])
+    def admin_panel(message):
+        user_id = message.from_user.id
+        if user_id != OWNER_ID:
+            bot.reply_to(message, "⚠️ هذا الأمر متاح فقط لمدير المتجر.")
+            return
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(types.InlineKeyboardButton("📊 إدارة جواهر فري فاير", callback_data="admin_ff"))
+        markup.add(types.InlineKeyboardButton("🔑 إدارة مفاتيح DRIP CLIENT", callback_data="admin_keys"))
+        bot.reply_to(message, "🛠️ *لوحة التحكم الإدارية*\nاختر القسم الذي تريد إدارته:", reply_markup=markup, parse_mode="Markdown")
 
     # ========== اختيار اللغة الأولية ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
@@ -1106,3 +1119,6 @@ def register_all_handlers(bot):
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
         bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
+
+    # ========== تسجيل معالجات لوحة التحكم الإدارية ==========
+    register_admin_handlers(bot)
