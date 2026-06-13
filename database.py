@@ -47,6 +47,7 @@ def migrate_ff_codes():
                 if code:
                     c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (str(qty), code))
         conn.commit()
+        print("✅ تم ترحيل أكواد الجواهر إلى قاعدة البيانات")
     conn.close()
 
 def migrate_key_codes():
@@ -65,6 +66,7 @@ def migrate_key_codes():
                         c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)",
                                   (prod_id, str(duration), code))
         conn.commit()
+        print("✅ تم ترحيل المفاتيح إلى قاعدة البيانات")
     conn.close()
 
 def get_lang(user_id):
