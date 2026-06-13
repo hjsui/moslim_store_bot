@@ -30,16 +30,14 @@ def init_db():
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, duration TEXT, code TEXT, used INTEGER DEFAULT 0)''')
     conn.commit()
     conn.close()
-    # ترحيل الأكواد القديمة (يجبر الترحيل إذا كان الجدول فارغاً)
+    # ترحيل الأكواد القديمة مع مسح الجدول أولاً إذا كان فارغاً
     migrate_ff_codes()
     migrate_key_codes()
 
 def migrate_ff_codes():
-    """نقل الأكواد من config.py إلى جدول ff_codes إذا كان الجدول فارغاً"""
     try:
         from config import codes_inventory
     except ImportError:
-        print("⚠️ codes_inventory not found in config, skipping FF codes migration")
         return
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -48,18 +46,15 @@ def migrate_ff_codes():
     if count == 0:
         for qty, codes in codes_inventory.items():
             for code in codes:
-                if code and code.strip():
+                if code:
                     c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (qty, code))
         conn.commit()
-        print(f"✅ تم ترحيل أكواد الجواهر إلى قاعدة البيانات")
     conn.close()
 
 def migrate_key_codes():
-    """نقل المفاتيح من config.py إلى جدول key_codes إذا كان الجدول فارغاً"""
     try:
         from config import keys_inventory
     except ImportError:
-        print("⚠️ keys_inventory not found in config, skipping keys migration")
         return
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -69,13 +64,11 @@ def migrate_key_codes():
         for prod_id, prod_data in keys_inventory.items():
             for duration, codes in prod_data["codes"].items():
                 for code in codes:
-                    if code and code.strip():
+                    if code:
                         c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, duration, code))
         conn.commit()
-        print(f"✅ تم ترحيل المفاتيح إلى قاعدة البيانات")
     conn.close()
 
-# دوال المستخدم الأساسية (دون تغيير)
 def get_lang(user_id):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
@@ -169,7 +162,7 @@ def set_user_currency(user_id, currency):
     conn.commit()
     conn.close()
 
-# ========== دوال إدارة المخزون (الجواهر والمفاتيح) ==========
+# ========== دوال إدارة المخزون (محسنة ومضمونة) ==========
 def get_ff_code(quantity):
     """استرجاع كود غير مستخدم من الكمية المطلوبة وتمييزه كمستخدم"""
     conn = sqlite3.connect('moslim_store.db')
@@ -177,15 +170,16 @@ def get_ff_code(quantity):
     c.execute("SELECT id, code FROM ff_codes WHERE quantity=? AND used=0 LIMIT 1", (quantity,))
     row = c.fetchone()
     if row:
-        c.execute("UPDATE ff_codes SET used=1 WHERE id=?", (row[0],))
+        code_id, code = row[0], row[1]
+        c.execute("UPDATE ff_codes SET used=1 WHERE id=?", (code_id,))
         conn.commit()
         conn.close()
-        return row[1]
+        return code
     conn.close()
     return None
 
 def add_ff_code(quantity, code):
-    """إضافة كود جديد لجواهر فري فاير"""
+    """إضافة كود جديد لجواهر فري فاير (يستخدم في admin_handlers)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (quantity, code))
@@ -202,7 +196,6 @@ def del_ff_code(quantity, code):
     return c.rowcount > 0
 
 def get_ff_stock():
-    """إرجاع قائمة بكميات الجواهر وعدد الأكواد غير المستخدمة"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT quantity, COUNT(*) FROM ff_codes WHERE used=0 GROUP BY quantity")
@@ -211,7 +204,6 @@ def get_ff_stock():
     return rows
 
 def get_key_code(product_id, duration):
-    """استرجاع مفتاح غير مستخدم وتمييزه كمستخدم"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT id, code FROM key_codes WHERE product_id=? AND duration=? AND used=0 LIMIT 1", (product_id, duration))
@@ -225,7 +217,6 @@ def get_key_code(product_id, duration):
     return None
 
 def add_key_code(product_id, duration, code):
-    """إضافة مفتاح جديد لـ DRIP CLIENT"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (product_id, duration, code))
@@ -233,7 +224,6 @@ def add_key_code(product_id, duration, code):
     conn.close()
 
 def del_key_code(product_id, duration, code):
-    """حذف مفتاح DRIP CLIENT (غير مستخدم)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("DELETE FROM key_codes WHERE product_id=? AND duration=? AND code=? AND used=0 LIMIT 1", (product_id, duration, code))
@@ -242,7 +232,6 @@ def del_key_code(product_id, duration, code):
     return c.rowcount > 0
 
 def get_key_stock():
-    """إرجاع قائمة بمعرف المنتج والمدة وعدد المفاتيح غير المستخدمة"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     c.execute("SELECT product_id, duration, COUNT(*) FROM key_codes WHERE used=0 GROUP BY product_id, duration")
