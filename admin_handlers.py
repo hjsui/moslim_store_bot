@@ -111,45 +111,44 @@ def register_admin_handlers(bot):
         bot.edit_message_text("🛠️ *لوحة التحكم الإدارية*\nاختر القسم الذي تريد إدارته:", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
-    # ========== معالج الرسائل النصية للإدارة (إضافة/حذف) ==========
-    @bot.message_handler(func=lambda msg: msg.from_user.id == OWNER_ID and msg.text and not msg.text.startswith('/'))
-    def admin_text_handler(message):
-        user_id = message.from_user.id
-        if user_id not in admin_temp:
+# ========== دالة معالجة الرسائل النصية للإدارة (تُستدعى من handle_messages) ==========
+def process_admin_text(bot, message):
+    user_id = message.from_user.id
+    if user_id not in admin_temp:
+        return
+    data = admin_temp[user_id]
+    action = data['action']
+    step = data.get('step')
+    if step == 'awaiting_quantity_code' and action in ['ff_add', 'ff_del']:
+        parts = message.text.split()
+        if len(parts) != 2:
+            bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `الكمية الكود`", parse_mode="Markdown")
             return
-        data = admin_temp[user_id]
-        action = data['action']
-        step = data.get('step')
-        if step == 'awaiting_quantity_code' and action in ['ff_add', 'ff_del']:
-            parts = message.text.split()
-            if len(parts) != 2:
-                bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `الكمية الكود`", parse_mode="Markdown")
-                return
-            quantity, code = parts[0], parts[1]
-            if action == 'ff_add':
-                add_ff_code(quantity, code)
-                bot.reply_to(message, f"✅ تم إضافة الكود `{code}` للكمية {quantity}")
+        quantity, code = parts[0], parts[1]
+        if action == 'ff_add':
+            add_ff_code(quantity, code)
+            bot.reply_to(message, f"✅ تم إضافة الكود `{code}` للكمية {quantity}")
+        else:
+            if del_ff_code(quantity, code):
+                bot.reply_to(message, f"✅ تم حذف الكود `{code}` للكمية {quantity}")
             else:
-                if del_ff_code(quantity, code):
-                    bot.reply_to(message, f"✅ تم حذف الكود `{code}` للكمية {quantity}")
-                else:
-                    bot.reply_to(message, f"❌ الكود غير موجود أو مستخدم بالفعل")
-            del admin_temp[user_id]
-        elif step == 'awaiting_duration_code' and action in ['keys_add', 'keys_del']:
-            parts = message.text.split()
-            if len(parts) != 2:
-                bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `المدة الكود`\nالمدة: 1,3,7,15,30", parse_mode="Markdown")
-                return
-            duration, code = parts[0], parts[1]
-            if duration not in ['1','3','7','15','30']:
-                bot.reply_to(message, "❌ المدة غير صالحة. اختر: 1,3,7,15,30")
-                return
-            if action == 'keys_add':
-                add_key_code('dripclient', duration, code)
-                bot.reply_to(message, f"✅ تم إضافة المفتاح `{code}` لمدة {duration} أيام")
+                bot.reply_to(message, f"❌ الكود غير موجود أو مستخدم بالفعل")
+        del admin_temp[user_id]
+    elif step == 'awaiting_duration_code' and action in ['keys_add', 'keys_del']:
+        parts = message.text.split()
+        if len(parts) != 2:
+            bot.reply_to(message, "❌ الصيغة غير صحيحة. أرسل: `المدة الكود`\nالمدة: 1,3,7,15,30", parse_mode="Markdown")
+            return
+        duration, code = parts[0], parts[1]
+        if duration not in ['1','3','7','15','30']:
+            bot.reply_to(message, "❌ المدة غير صالحة. اختر: 1,3,7,15,30")
+            return
+        if action == 'keys_add':
+            add_key_code('dripclient', duration, code)
+            bot.reply_to(message, f"✅ تم إضافة المفتاح `{code}` لمدة {duration} أيام")
+        else:
+            if del_key_code('dripclient', duration, code):
+                bot.reply_to(message, f"✅ تم حذف المفتاح `{code}` لمدة {duration} أيام")
             else:
-                if del_key_code('dripclient', duration, code):
-                    bot.reply_to(message, f"✅ تم حذف المفتاح `{code}` لمدة {duration} أيام")
-                else:
-                    bot.reply_to(message, f"❌ المفتاح غير موجود")
-            del admin_temp[user_id]
+                bot.reply_to(message, f"❌ المفتاح غير موجود")
+        del admin_temp[user_id]
