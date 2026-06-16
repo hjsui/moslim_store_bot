@@ -217,13 +217,24 @@ def check_ff_code_available(quantity):
     conn.close()
     return row is not None
 
-# ========== دوال إدارة المخزون (مفاتيح) - تم التصحيح ==========
+# ========== دوال إدارة المخزون (مفاتيح) - تم التصحيح باستخدام trim() ==========
 def get_key_code(product_id, duration):
-    """استرجاع أقدم مفتاح غير مستخدم (بترتيب id)"""
+    """استرجاع أقدم مفتاح غير مستخدم (مع تجاهل المسافات)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    duration = str(duration)
-    c.execute("SELECT id, code FROM key_codes WHERE product_id=? AND duration=? AND used=0 ORDER BY id ASC LIMIT 1", (product_id, duration))
+    duration = str(duration).strip()
+    product_id = str(product_id).strip()
+    
+    # طباعة للتتبع (ستظهر في سجل Render)
+    print(f"🔍 [get_key_code] البحث عن: product_id='{product_id}', duration='{duration}'")
+    
+    # استخدام trim() في الاستعلام لتجاهل أي مسافات إضافية
+    c.execute("""
+        SELECT id, code FROM key_codes 
+        WHERE trim(product_id) = ? AND trim(duration) = ? AND used = 0 
+        ORDER BY id ASC LIMIT 1
+    """, (product_id, duration))
+    
     row = c.fetchone()
     if row:
         code_id, code = row[0], row[1]
@@ -239,7 +250,8 @@ def get_key_code(product_id, duration):
 def add_key_code(product_id, duration, code):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    duration = str(duration)
+    duration = str(duration).strip()
+    product_id = str(product_id).strip()
     c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (product_id, duration, code))
     conn.commit()
     conn.close()
@@ -248,8 +260,9 @@ def add_key_code(product_id, duration, code):
 def del_key_code(product_id, duration, code):
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    duration = str(duration)
-    c.execute("DELETE FROM key_codes WHERE product_id=? AND duration=? AND code=? AND used=0 LIMIT 1", (product_id, duration, code))
+    duration = str(duration).strip()
+    product_id = str(product_id).strip()
+    c.execute("DELETE FROM key_codes WHERE trim(product_id)=? AND trim(duration)=? AND code=? AND used=0 LIMIT 1", (product_id, duration, code))
     conn.commit()
     conn.close()
     return c.rowcount > 0
@@ -257,19 +270,29 @@ def del_key_code(product_id, duration, code):
 def get_key_stock():
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    c.execute("SELECT product_id, duration, COUNT(*) FROM key_codes WHERE used=0 GROUP BY product_id, duration")
+    c.execute("SELECT trim(product_id), trim(duration), COUNT(*) FROM key_codes WHERE used=0 GROUP BY trim(product_id), trim(duration)")
     rows = c.fetchall()
     conn.close()
     return rows
 
 def check_key_code_available(product_id, duration):
-    """التحقق من وجود مفتاح دون استهلاكه"""
+    """التحقق من وجود مفتاح دون استهلاكه (مع تجاهل المسافات)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
-    duration = str(duration)
-    c.execute("SELECT id FROM key_codes WHERE product_id=? AND duration=? AND used=0 LIMIT 1", (product_id, duration))
+    duration = str(duration).strip()
+    product_id = str(product_id).strip()
+    
+    print(f"🔍 [check_key_code_available] product_id='{product_id}', duration='{duration}'")
+    
+    c.execute("""
+        SELECT id FROM key_codes 
+        WHERE trim(product_id) = ? AND trim(duration) = ? AND used = 0 
+        LIMIT 1
+    """, (product_id, duration))
+    
     row = c.fetchone()
     conn.close()
+    print(f"   موجود: {row is not None}")
     return row is not None
 
 # ========== مزامنة الأكواد من config.py (للمفاتيح والجواهر) ==========
