@@ -1,7 +1,7 @@
 # handlers.py
 # الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
 # تم التصحيح: عدم استهلاك الأكواد قبل قبول الدفع (للمستخدمين العاديين)
-# تم إضافة أمر /fix_keys لتصحيح product_id في جدول key_codes
+# تم إضافة أمر /fix_keys لتصحيح product_id في جدول key_codes و orders
 
 import telebot
 from telebot import types
@@ -211,6 +211,10 @@ def register_all_handlers(bot):
                 parts = product_id.split('_')
                 if len(parts) == 2:
                     key_id, days = parts[0], parts[1]
+                    # ✅ تصحيح: إذا كان key_id خطأ إملائياً، نصححه إلى dripclient
+                    if key_id != 'dripclient':
+                        print(f"⚠️ [finalize_order] تم تصحيح key_id من '{key_id}' إلى 'dripclient'")
+                        key_id = 'dripclient'
                     print(f"🔍 محاولة سحب مفتاح: product_id={key_id}, duration={days}")
                     code = get_key_code(key_id, days)
                     if code:
@@ -431,7 +435,7 @@ def register_all_handlers(bot):
         markup.add(types.InlineKeyboardButton("🔑 إدارة مفاتيح DRIP CLIENT", callback_data="admin_keys"))
         bot.reply_to(message, "🛠️ *لوحة التحكم الإدارية*\nاختر القسم الذي تريد إدارته:", reply_markup=markup, parse_mode="Markdown")
 
-    # ========== أمر تصحيح المفاتيح (جديد) ==========
+    # ========== أمر تصحيح المفاتيح (محدث) ==========
     @bot.message_handler(commands=['fix_keys'])
     def fix_keys_command(message):
         if message.from_user.id != OWNER_ID:
@@ -439,14 +443,21 @@ def register_all_handlers(bot):
             return
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
-        # عرض عدد الصفوف قبل التحديث
+        # عرض عدد الصفوف قبل التحديث في key_codes
         c.execute("SELECT COUNT(*) FROM key_codes WHERE product_id != 'dripclient'")
-        count_before = c.fetchone()[0]
-        # تحديث جميع product_id إلى 'dripclient'
+        count_before_key = c.fetchone()[0]
+        # تحديث جميع product_id إلى 'dripclient' في key_codes
         c.execute("UPDATE key_codes SET product_id = 'dripclient'")
+        
+        # عرض عدد الصفوف قبل التحديث في orders
+        c.execute("SELECT COUNT(*) FROM orders WHERE product_type = 'key' AND product_id LIKE '%dipclient%'")
+        count_before_orders = c.fetchone()[0]
+        # تحديث جميع product_id الخاطئة في orders
+        c.execute("UPDATE orders SET product_id = REPLACE(product_id, 'dipclient', 'dripclient') WHERE product_type = 'key'")
+        
         conn.commit()
         conn.close()
-        bot.reply_to(message, f"✅ تم تحديث {count_before} صف في جدول key_codes إلى product_id = 'dripclient'")
+        bot.reply_to(message, f"✅ تم تحديث {count_before_key} صف في key_codes، و {count_before_orders} صف في orders إلى product_id = 'dripclient'")
 
     # ========== اختيار اللغة الأولية ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
@@ -919,6 +930,11 @@ def register_all_handlers(bot):
         lang = get_lang(user_id)
         t = T[lang]
         
+        # ✅ تصحيح: تأكد من أن prod_id هو "dripclient" دائماً
+        if prod_id != 'dripclient':
+            print(f"⚠️ [handle_key_buy] تم تصحيح prod_id من '{prod_id}' إلى 'dripclient'")
+            prod_id = 'dripclient'
+        
         if not check_key_code_available(prod_id, days):
             bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
             return
@@ -953,7 +969,7 @@ def register_all_handlers(bot):
                     pass
             bot.answer_callback_query(call.id, t["confirm_purchase"])
         else:
-            show_payment_methods(user_id, 'key', f"dripclient_{days}", price_mad)
+            show_payment_methods(user_id, 'key', f"{prod_id}_{days}", price_mad)
             bot.answer_callback_query(call.id)
 
     # ========== شراء التطبيقات ==========
@@ -1022,6 +1038,14 @@ def register_all_handlers(bot):
         if product_type == 'ff':
             order_id = create_order(user_id, 'ff', product_id, amount)
         elif product_type == 'key':
+            # ✅ تأكد من أن product_id يبدأ بـ 'dripclient' قبل التخزين
+            if not product_id.startswith('dripclient'):
+                # إذا كان product_id يحتوي على خطأ، نصححه
+                if 'dipclient' in product_id:
+                    product_id = product_id.replace('dipclient', 'dripclient')
+                else:
+                    # تأكد من أن المفتاح صحيح
+                    product_id = f"dripclient_{product_id.split('_')[-1] if '_' in product_id else product_id}"
             order_id = create_order(user_id, 'key', product_id, amount)
         elif product_type == 'app':
             order_id = create_order(user_id, 'app', product_id, amount)
