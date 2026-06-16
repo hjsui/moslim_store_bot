@@ -1,5 +1,6 @@
 # handlers.py
 # الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
+# تم التصحيح: عدم استهلاك الأكواد قبل قبول الدفع (للمستخدمين العاديين)
 
 import telebot
 from telebot import types
@@ -15,7 +16,8 @@ from database import (
     get_lang, set_lang, get_verified_count, add_purchase_record,
     create_order, update_order_status, get_order,
     get_user_currency, set_user_currency,
-    get_ff_code, get_key_code
+    get_ff_code, get_key_code,
+    check_ff_code_available, check_key_code_available  # ✅ جديد
 )
 from utils import is_admin, is_whitelisted
 from payment_methods import PAYMENT_METHODS
@@ -807,18 +809,25 @@ def register_all_handlers(bot):
         else:
             bot.send_message(message.chat.id, "❌ " + ("لم نتمكن من جلب حالة الطلب." if get_lang(message.chat.id)=='ar' else "Could not fetch order status."))
 
-    # ========== شراء الجواهر ==========
+    # ========== شراء الجواهر (تم التصحيح) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('buy_'))
     def process_purchase(call):
         pkg = call.data.split('_')[1]
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
-        code = get_ff_code(pkg)
-        if not code:
+        
+        # ✅ فقط نتحقق من وجود كود، دون استهلاكه
+        if not check_ff_code_available(pkg):
             bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
             return
+        
         if is_whitelisted(user_id):
+            # الآن فقط نستهلك الكود
+            code = get_ff_code(pkg)
+            if not code:  # تأمين إضافي
+                bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
+                return
             currency = get_user_currency(user_id)
             if currency == 'usd':
                 price_display = round(int(prices[pkg]) / USD_TO_MAD, 2)
@@ -846,7 +855,7 @@ def register_all_handlers(bot):
             show_payment_methods(user_id, 'ff', pkg, int(prices[pkg]))
             bot.answer_callback_query(call.id)
 
-    # ========== شراء المفاتيح ==========
+    # ========== شراء المفاتيح (تم التصحيح) ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('key_prod_'))
     def choose_duration(call):
         prod_id = call.data.split('_')[2]
@@ -890,11 +899,17 @@ def register_all_handlers(bot):
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
-        code = get_key_code(prod_id, days)
-        if not code:
+        
+        # ✅ فقط نتحقق من وجود مفتاح، دون استهلاكه
+        if not check_key_code_available(prod_id, days):
             bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
             return
+        
         if is_whitelisted(user_id):
+            code = get_key_code(prod_id, days)
+            if not code:
+                bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
+                return
             product_name = keys_inventory[prod_id]["name_ar"] if lang == 'ar' else keys_inventory[prod_id]["name_en"]
             currency = get_user_currency(user_id)
             if currency == 'usd':
