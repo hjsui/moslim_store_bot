@@ -123,6 +123,8 @@ def process_admin_text(bot, message):
             bot.reply_to(message, "❌ المدة غير صالحة. اختر: 1,3,7,15,30")
             return
         add_key_code('dripclient', first, second)
+        # ✅ طباعة تأكيد في السجل
+        print(f"✅ [ADMIN] تم إضافة مفتاح: المدة={first}, الكود={second}")
         bot.reply_to(message, f"✅ تم إضافة المفتاح `{second}` لمدة {first} أيام")
         del admin_temp[user_id]
     elif action == 'keys_del':
