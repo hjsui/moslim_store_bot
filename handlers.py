@@ -2,6 +2,7 @@
 # الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
 # تم التصحيح: عدم استهلاك الأكواد قبل قبول الدفع (للمستخدمين العاديين)
 # تم إضافة أمر /fix_keys لتصحيح product_id في جدول key_codes و orders
+# تم تصحيح handle_payment_method لاستخدام rsplit لفصل product_id عن amount
 
 import telebot
 from telebot import types
@@ -1017,15 +1018,32 @@ def register_all_handlers(bot):
     # ========== معالجات الدفع ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
     def handle_payment_method(call):
-        parts = call.data.split('_', 4)
-        if len(parts) < 5:
-            bot.answer_callback_query(call.id, "❌ " + ("خطأ في البيانات" if get_lang(call.from_user.id)=='ar' else "Data error"), show_alert=True)
+        # ✅ استخدم rsplit لفصل product_id عن amount بشكل صحيح
+        # call.data مثال: pay_cih_key_dripclient_1_20
+        # نريد استخراج: method_key='cih', product_type='key', product_id='dripclient_1', amount=20
+        data_parts = call.data.split('_', 3)  # يقسم إلى 4 أجزاء: ['pay', 'method', 'type', 'rest']
+        if len(data_parts) < 4:
+            bot.answer_callback_query(call.id, "❌ خطأ في البيانات", show_alert=True)
             return
-        method_key, product_type, product_id, amount_str = parts[1], parts[2], parts[3], parts[4]
-        amount = float(amount_str)
+        method_key = data_parts[1]
+        product_type = data_parts[2]
+        rest = data_parts[3]  # rest = 'dripclient_1_20' مثلاً
+        
+        # فصل product_id عن amount من اليمين
+        # product_id قد يحتوي على '_' (مثل dripclient_1)
+        # amount هو الرقم الأخير
+        try:
+            product_id, amount_str = rest.rsplit('_', 1)
+            amount = float(amount_str)
+        except ValueError:
+            bot.answer_callback_query(call.id, "❌ خطأ في السعر", show_alert=True)
+            return
+        
         user_id = call.from_user.id
         lang = get_lang(user_id)
         t = T[lang]
+        
+        # التحقق من وجود طلب معلق
         conn = sqlite3.connect('moslim_store.db')
         c = conn.cursor()
         c.execute("SELECT order_id FROM orders WHERE user_id=? AND status IN ('pending', 'waiting_admin')", (user_id,))
@@ -1034,18 +1052,20 @@ def register_all_handlers(bot):
             conn.close()
             return
         conn.close()
+        
+        # إنشاء الطلب حسب نوع المنتج
         order_id = None
         if product_type == 'ff':
             order_id = create_order(user_id, 'ff', product_id, amount)
         elif product_type == 'key':
-            # ✅ تأكد من أن product_id يبدأ بـ 'dripclient' قبل التخزين
+            # ✅ تأكد من أن product_id يبدأ بـ 'dripclient'، وإلا صححه
             if not product_id.startswith('dripclient'):
-                # إذا كان product_id يحتوي على خطأ، نصححه
                 if 'dipclient' in product_id:
                     product_id = product_id.replace('dipclient', 'dripclient')
                 else:
-                    # تأكد من أن المفتاح صحيح
-                    product_id = f"dripclient_{product_id.split('_')[-1] if '_' in product_id else product_id}"
+                    # إذا كان product_id فقط 'dripclient' بدون مدة، أضف المدة
+                    # لكن في حالتنا هذا لن يحدث لأننا فصلنا بشكل صحيح
+                    pass
             order_id = create_order(user_id, 'key', product_id, amount)
         elif product_type == 'app':
             order_id = create_order(user_id, 'app', product_id, amount)
@@ -1061,10 +1081,12 @@ def register_all_handlers(bot):
         else:
             bot.answer_callback_query(call.id, "❌ " + ("نوع منتج غير معروف" if lang=='ar' else "Unknown product type"), show_alert=True)
             return
+        
         method = PAYMENT_METHODS.get(method_key)
         if not method:
             bot.answer_callback_query(call.id, "❌ " + ("طريقة دفع غير معروفة" if lang=='ar' else "Unknown payment method"), show_alert=True)
             return
+        
         currency = get_user_currency(user_id)
         if currency == 'usd':
             amount_display = round(amount / USD_TO_MAD, 2)
@@ -1072,6 +1094,7 @@ def register_all_handlers(bot):
         else:
             amount_display = amount
             currency_symbol = t.get("currency_mad", "درهم")
+        
         instructions = (f"<b>{t['payment_method_label']}</b> {method['name_ar'] if lang=='ar' else method['name_en']}\n"
                         f"━━━━━━━━━━━━\n{method['details_ar'] if lang=='ar' else method['details_en']}\n\n"
                         f"<b>{t['amount']}</b> {amount_display} {currency_symbol}\n"
