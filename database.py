@@ -251,3 +251,58 @@ def get_key_stock():
     rows = c.fetchall()
     conn.close()
     return rows
+
+# ========== دوال جديدة للتحقق من وجود كود دون استهلاكه ==========
+def check_ff_code_available(quantity):
+    """التحقق من وجود كود غير مستخدم (دون استهلاكه)"""
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    quantity = str(quantity)
+    c.execute("SELECT id FROM ff_codes WHERE quantity=? AND used=0 LIMIT 1", (quantity,))
+    row = c.fetchone()
+    conn.close()
+    return row is not None
+
+def check_key_code_available(product_id, duration):
+    """التحقق من وجود مفتاح غير مستخدم (دون استهلاكه)"""
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    duration = str(duration)
+    c.execute("SELECT id FROM key_codes WHERE product_id=? AND duration=? AND used=0 LIMIT 1", (product_id, duration))
+    row = c.fetchone()
+    conn.close()
+    return row is not None
+
+# ========== (اختياري) مزامنة الأكواد من config.py في حال إضافتها يدوياً ==========
+def sync_codes_from_config():
+    """مزامنة الأكواد من config.py إلى قاعدة البيانات دون تكرار (لا تحتاجها إذا كنت تستخدم لوحة الأدمن فقط)"""
+    try:
+        from config import codes_inventory, keys_inventory
+    except ImportError:
+        return
+    
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    
+    # مزامنة ff_codes
+    for qty, codes in codes_inventory.items():
+        for code in codes:
+            if not code:
+                continue
+            c.execute("SELECT id FROM ff_codes WHERE quantity=? AND code=?", (str(qty), code))
+            if not c.fetchone():
+                c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (str(qty), code))
+    
+    # مزامنة key_codes
+    for prod_id, prod_data in keys_inventory.items():
+        for duration, codes in prod_data.get("codes", {}).items():
+            for code in codes:
+                if not code:
+                    continue
+                c.execute("SELECT id FROM key_codes WHERE product_id=? AND duration=? AND code=?", (prod_id, str(duration), code))
+                if not c.fetchone():
+                    c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (prod_id, str(duration), code))
+    
+    conn.commit()
+    conn.close()
+    print("✅ تمت مزامنة الأكواد من config.py إلى قاعدة البيانات")
