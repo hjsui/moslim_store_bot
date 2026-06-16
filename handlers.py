@@ -1,7 +1,7 @@
 # handlers.py
 # الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
 # تم التصحيح: عدم استهلاك الأكواد قبل قبول الدفع (للمستخدمين العاديين)
-# تمت إضافة print statements لتتبع سحب المفاتيح
+# تم إضافة أمر /fix_keys لتصحيح product_id في جدول key_codes
 
 import telebot
 from telebot import types
@@ -211,7 +211,7 @@ def register_all_handlers(bot):
                 parts = product_id.split('_')
                 if len(parts) == 2:
                     key_id, days = parts[0], parts[1]
-                    print(f"🔍 محاولة سحب مفتاح: product_id={key_id}, duration={days}")  # تتبع
+                    print(f"🔍 محاولة سحب مفتاح: product_id={key_id}, duration={days}")
                     code = get_key_code(key_id, days)
                     if code:
                         print(f"✅ تم سحب المفتاح: {code}")
@@ -311,11 +311,6 @@ def register_all_handlers(bot):
                     bot.send_message(admin, f"❌ تم رفض الطلب {order_id}")
                 except:
                     pass
-
-    # باقي الدوال (من show_social_platforms إلى نهاية الملف) هي نفسها تماماً كما في نسختك القديمة.
-    # لتجنب التكرار، سأكمل بنسخ الباقي من ملفك الأصلي مع الحفاظ على التعديلات.
-    # (لقد قمت بنسخ الملف الأصلي وأضفت فقط التعديلات أعلاه في finalize_order)
-    # ... (باقي الملف مطابق لما أرسلته أنت، مع إضافة الأسطر الثلاثة في قسم keys)
 
     # ========== دوال السوشل ميديا (غير معدلة) ==========
     def show_social_platforms(user_id, lang):
@@ -435,6 +430,23 @@ def register_all_handlers(bot):
         markup.add(types.InlineKeyboardButton("📊 إدارة جواهر فري فاير", callback_data="admin_ff"))
         markup.add(types.InlineKeyboardButton("🔑 إدارة مفاتيح DRIP CLIENT", callback_data="admin_keys"))
         bot.reply_to(message, "🛠️ *لوحة التحكم الإدارية*\nاختر القسم الذي تريد إدارته:", reply_markup=markup, parse_mode="Markdown")
+
+    # ========== أمر تصحيح المفاتيح (جديد) ==========
+    @bot.message_handler(commands=['fix_keys'])
+    def fix_keys_command(message):
+        if message.from_user.id != OWNER_ID:
+            bot.reply_to(message, "⚠️ هذا الأمر خاص بالمالك فقط.")
+            return
+        conn = sqlite3.connect('moslim_store.db')
+        c = conn.cursor()
+        # عرض عدد الصفوف قبل التحديث
+        c.execute("SELECT COUNT(*) FROM key_codes WHERE product_id != 'dripclient'")
+        count_before = c.fetchone()[0]
+        # تحديث جميع product_id إلى 'dripclient'
+        c.execute("UPDATE key_codes SET product_id = 'dripclient'")
+        conn.commit()
+        conn.close()
+        bot.reply_to(message, f"✅ تم تحديث {count_before} صف في جدول key_codes إلى product_id = 'dripclient'")
 
     # ========== اختيار اللغة الأولية ==========
     @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
@@ -826,15 +838,13 @@ def register_all_handlers(bot):
         lang = get_lang(user_id)
         t = T[lang]
         
-        # ✅ فقط نتحقق من وجود كود، دون استهلاكه
         if not check_ff_code_available(pkg):
             bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
             return
         
         if is_whitelisted(user_id):
-            # الآن فقط نستهلك الكود
             code = get_ff_code(pkg)
-            if not code:  # تأمين إضافي
+            if not code:
                 bot.answer_callback_query(call.id, t["out_of_stock"], show_alert=True)
                 return
             currency = get_user_currency(user_id)
@@ -909,7 +919,6 @@ def register_all_handlers(bot):
         lang = get_lang(user_id)
         t = T[lang]
         
-        # ✅ فقط نتحقق من وجود مفتاح، دون استهلاكه
         if not check_key_code_available(prod_id, days):
             bot.answer_callback_query(call.id, t["no_stock"], show_alert=True)
             return
@@ -1148,25 +1157,6 @@ def register_all_handlers(bot):
             markup.add(types.InlineKeyboardButton(btn_text, callback_data=f"key_prod_{prod_id}"))
         bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
-
-    # ========== أمر تصحيح أخطاء المفاتيح ==========
-    @bot.message_handler(commands=['debug_keys'])
-    def debug_keys(message):
-        if message.from_user.id != OWNER_ID:
-            bot.reply_to(message, "⚠️ هذا الأمر خاص بالمالك فقط.")
-            return
-        conn = sqlite3.connect('moslim_store.db')
-        c = conn.cursor()
-        c.execute("SELECT id, product_id, duration, code, used FROM key_codes")
-        rows = c.fetchall()
-        conn.close()
-        if not rows:
-            bot.send_message(message.chat.id, "📭 *جدول key_codes فارغ*", parse_mode="Markdown")
-            return
-        msg = "📊 *محتوى جدول key_codes:*\n"
-        for row in rows:
-            msg += f"`ID:{row[0]}, prod:{row[1]}, dur:{row[2]}, code:{row[3][:4]}***, used:{row[4]}`\n"
-        bot.send_message(message.chat.id, msg, parse_mode="Markdown")
 
     # ========== تسجيل معالجات لوحة التحكم الإدارية ==========
     register_admin_handlers(bot)
