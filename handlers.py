@@ -1149,5 +1149,24 @@ def register_all_handlers(bot):
         bot.edit_message_text(t["choose_product"], chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id)
 
+    # ========== أمر تصحيح أخطاء المفاتيح ==========
+    @bot.message_handler(commands=['debug_keys'])
+    def debug_keys(message):
+        if message.from_user.id != OWNER_ID:
+            bot.reply_to(message, "⚠️ هذا الأمر خاص بالمالك فقط.")
+            return
+        conn = sqlite3.connect('moslim_store.db')
+        c = conn.cursor()
+        c.execute("SELECT id, product_id, duration, code, used FROM key_codes")
+        rows = c.fetchall()
+        conn.close()
+        if not rows:
+            bot.send_message(message.chat.id, "📭 *جدول key_codes فارغ*", parse_mode="Markdown")
+            return
+        msg = "📊 *محتوى جدول key_codes:*\n"
+        for row in rows:
+            msg += f"`ID:{row[0]}, prod:{row[1]}, dur:{row[2]}, code:{row[3][:4]}***, used:{row[4]}`\n"
+        bot.send_message(message.chat.id, msg, parse_mode="Markdown")
+
     # ========== تسجيل معالجات لوحة التحكم الإدارية ==========
     register_admin_handlers(bot)
