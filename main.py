@@ -1,7 +1,7 @@
 import telebot
 import time
 from config import BOT_TOKEN
-from database import init_db
+from database import init_db, sync_codes_from_config   # ✅ أضفنا sync_codes_from_config
 from utils import keep_alive
 from handlers import register_all_handlers
 
@@ -14,6 +14,9 @@ register_all_handlers(bot)
 if __name__ == "__main__":
     # تهيئة قاعدة البيانات
     init_db()
+    
+    # ✅ مزامنة الأكواد من config.py إلى قاعدة البيانات (اختياري ولكن مفيد)
+    sync_codes_from_config()
     
     # تشغيل خادم Flask للحفاظ على البوت حياً على Render
     keep_alive()
