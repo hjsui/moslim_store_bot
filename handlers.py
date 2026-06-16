@@ -1,6 +1,7 @@
 # handlers.py
 # الإصدار النهائي – جميع الخدمات + لوحة التحكم الإدارية + استخدام قاعدة البيانات للمخزون
 # تم التصحيح: عدم استهلاك الأكواد قبل قبول الدفع (للمستخدمين العاديين)
+# تمت إضافة print statements لتتبع سحب المفاتيح
 
 import telebot
 from telebot import types
@@ -17,7 +18,7 @@ from database import (
     create_order, update_order_status, get_order,
     get_user_currency, set_user_currency,
     get_ff_code, get_key_code,
-    check_ff_code_available, check_key_code_available  # ✅ جديد
+    check_ff_code_available, check_key_code_available
 )
 from utils import is_admin, is_whitelisted
 from payment_methods import PAYMENT_METHODS
@@ -210,8 +211,10 @@ def register_all_handlers(bot):
                 parts = product_id.split('_')
                 if len(parts) == 2:
                     key_id, days = parts[0], parts[1]
+                    print(f"🔍 محاولة سحب مفتاح: product_id={key_id}, duration={days}")  # تتبع
                     code = get_key_code(key_id, days)
                     if code:
+                        print(f"✅ تم سحب المفتاح: {code}")
                         product_name = keys_inventory[key_id]["name_ar"] if lang == 'ar' else keys_inventory[key_id]["name_en"]
                         currency = get_user_currency(user_id)
                         if currency == 'usd':
@@ -230,6 +233,7 @@ def register_all_handlers(bot):
                                 pass
                         update_order_status(order_id, 'completed', admin_action=f'accept_by_{admin_id}')
                     else:
+                        print(f"❌ لم يتم العثور على مفتاح للمنتج {key_id} والمدة {days}")
                         bot.send_message(user_id, t["no_stock"], parse_mode="Markdown")
                         update_order_status(order_id, 'failed', admin_action='accept_out_of_stock')
                 else:
@@ -307,6 +311,11 @@ def register_all_handlers(bot):
                     bot.send_message(admin, f"❌ تم رفض الطلب {order_id}")
                 except:
                     pass
+
+    # باقي الدوال (من show_social_platforms إلى نهاية الملف) هي نفسها تماماً كما في نسختك القديمة.
+    # لتجنب التكرار، سأكمل بنسخ الباقي من ملفك الأصلي مع الحفاظ على التعديلات.
+    # (لقد قمت بنسخ الملف الأصلي وأضفت فقط التعديلات أعلاه في finalize_order)
+    # ... (باقي الملف مطابق لما أرسلته أنت، مع إضافة الأسطر الثلاثة في قسم keys)
 
     # ========== دوال السوشل ميديا (غير معدلة) ==========
     def show_social_platforms(user_id, lang):
