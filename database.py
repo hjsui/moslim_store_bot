@@ -60,7 +60,7 @@ def migrate_key_codes():
     c.execute("SELECT COUNT(*) FROM key_codes")
     if c.fetchone()[0] == 0:
         for prod_id, prod_data in keys_inventory.items():
-            for duration, codes in prod_data["codes"].items():
+            for duration, codes in prod_data.get("codes", {}).items():
                 for code in codes:
                     if code:
                         c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)",
@@ -162,13 +162,12 @@ def set_user_currency(user_id, currency):
     conn.commit()
     conn.close()
 
-# ========== دوال إدارة المخزون المصححة ==========
+# ========== دوال إدارة المخزون (جواهر) ==========
 def get_ff_code(quantity):
     """استرجاع أقدم كود غير مستخدم (بترتيب id)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     quantity = str(quantity)
-    # ✅ أهم تغيير: ORDER BY id ASC لضمان الترتيب
     c.execute("SELECT id, code FROM ff_codes WHERE quantity=? AND used=0 ORDER BY id ASC LIMIT 1", (quantity,))
     row = c.fetchone()
     if row:
@@ -176,9 +175,9 @@ def get_ff_code(quantity):
         c.execute("UPDATE ff_codes SET used=1 WHERE id=?", (code_id,))
         conn.commit()
         conn.close()
-        print(f"✅ سحب كود {code} للكمية {quantity}")
+        print(f"✅ سحب كود جواهر {code} للكمية {quantity}")
         return code
-    print(f"❌ لا يوجد كود للكمية {quantity}")
+    print(f"❌ لا يوجد كود جواهر للكمية {quantity}")
     conn.close()
     return None
 
@@ -189,7 +188,7 @@ def add_ff_code(quantity, code):
     c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (quantity, code))
     conn.commit()
     conn.close()
-    print(f"✅ تم إضافة الكود {code} للكمية {quantity}")
+    print(f"✅ تم إضافة كود جواهر {code} للكمية {quantity}")
 
 def del_ff_code(quantity, code):
     conn = sqlite3.connect('moslim_store.db')
@@ -208,12 +207,22 @@ def get_ff_stock():
     conn.close()
     return rows
 
+def check_ff_code_available(quantity):
+    """التحقق من وجود كود جواهر دون استهلاكه"""
+    conn = sqlite3.connect('moslim_store.db')
+    c = conn.cursor()
+    quantity = str(quantity)
+    c.execute("SELECT id FROM ff_codes WHERE quantity=? AND used=0 LIMIT 1", (quantity,))
+    row = c.fetchone()
+    conn.close()
+    return row is not None
+
+# ========== دوال إدارة المخزون (مفاتيح) - تم التصحيح ==========
 def get_key_code(product_id, duration):
-    """استرجاع أقدم مفتاح غير مستخدم للمدة المطلوبة"""
+    """استرجاع أقدم مفتاح غير مستخدم (بترتيب id)"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     duration = str(duration)
-    # ✅ ORDER BY id ASC
     c.execute("SELECT id, code FROM key_codes WHERE product_id=? AND duration=? AND used=0 ORDER BY id ASC LIMIT 1", (product_id, duration))
     row = c.fetchone()
     if row:
@@ -221,9 +230,9 @@ def get_key_code(product_id, duration):
         c.execute("UPDATE key_codes SET used=1 WHERE id=?", (code_id,))
         conn.commit()
         conn.close()
-        print(f"✅ سحب مفتاح {code} لمدة {duration} أيام")
+        print(f"✅ سحب مفتاح {code} للمنتج {product_id} والمدة {duration}")
         return code
-    print(f"❌ لا يوجد مفتاح للمدة {duration}")
+    print(f"❌ لا يوجد مفتاح للمنتج {product_id} والمدة {duration}")
     conn.close()
     return None
 
@@ -234,6 +243,7 @@ def add_key_code(product_id, duration, code):
     c.execute("INSERT INTO key_codes (product_id, duration, code, used) VALUES (?,?,?,0)", (product_id, duration, code))
     conn.commit()
     conn.close()
+    print(f"✅ تم إضافة مفتاح {code} للمنتج {product_id} والمدة {duration}")
 
 def del_key_code(product_id, duration, code):
     conn = sqlite3.connect('moslim_store.db')
@@ -252,19 +262,8 @@ def get_key_stock():
     conn.close()
     return rows
 
-# ========== دوال جديدة للتحقق من وجود كود دون استهلاكه ==========
-def check_ff_code_available(quantity):
-    """التحقق من وجود كود غير مستخدم (دون استهلاكه)"""
-    conn = sqlite3.connect('moslim_store.db')
-    c = conn.cursor()
-    quantity = str(quantity)
-    c.execute("SELECT id FROM ff_codes WHERE quantity=? AND used=0 LIMIT 1", (quantity,))
-    row = c.fetchone()
-    conn.close()
-    return row is not None
-
 def check_key_code_available(product_id, duration):
-    """التحقق من وجود مفتاح غير مستخدم (دون استهلاكه)"""
+    """التحقق من وجود مفتاح دون استهلاكه"""
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     duration = str(duration)
@@ -273,9 +272,9 @@ def check_key_code_available(product_id, duration):
     conn.close()
     return row is not None
 
-# ========== (اختياري) مزامنة الأكواد من config.py في حال إضافتها يدوياً ==========
+# ========== مزامنة الأكواد من config.py (للمفاتيح والجواهر) ==========
 def sync_codes_from_config():
-    """مزامنة الأكواد من config.py إلى قاعدة البيانات دون تكرار (لا تحتاجها إذا كنت تستخدم لوحة الأدمن فقط)"""
+    """مزامنة الأكواد من config.py إلى قاعدة البيانات دون تكرار"""
     try:
         from config import codes_inventory, keys_inventory
     except ImportError:
@@ -284,7 +283,7 @@ def sync_codes_from_config():
     conn = sqlite3.connect('moslim_store.db')
     c = conn.cursor()
     
-    # مزامنة ff_codes
+    # مزامنة أكواد الجواهر
     for qty, codes in codes_inventory.items():
         for code in codes:
             if not code:
@@ -293,7 +292,7 @@ def sync_codes_from_config():
             if not c.fetchone():
                 c.execute("INSERT INTO ff_codes (quantity, code, used) VALUES (?,?,0)", (str(qty), code))
     
-    # مزامنة key_codes
+    # مزامنة المفاتيح
     for prod_id, prod_data in keys_inventory.items():
         for duration, codes in prod_data.get("codes", {}).items():
             for code in codes:
