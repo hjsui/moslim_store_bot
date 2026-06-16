@@ -1,7 +1,7 @@
 import telebot
 import time
 from config import BOT_TOKEN
-from database import init_db, sync_codes_from_config   # ✅ أضفنا sync_codes_from_config
+from database import init_db, sync_codes_from_config
 from utils import keep_alive
 from handlers import register_all_handlers
 
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # تهيئة قاعدة البيانات
     init_db()
     
-    # ✅ مزامنة الأكواد من config.py إلى قاعدة البيانات (اختياري ولكن مفيد)
+    # مزامنة الأكواد من config.py إلى قاعدة البيانات
     sync_codes_from_config()
     
     # تشغيل خادم Flask للحفاظ على البوت حياً على Render
@@ -24,10 +24,10 @@ if __name__ == "__main__":
     # إزالة أي webhook قديم لتجنب خطأ 409 Conflict
     print("🚀 جاري إيقاف أي اتصال سابق للبوت...")
     bot.remove_webhook()
-    time.sleep(2)  # انتظار حتى يتم تطبيق إزالة الـ webhook
+    time.sleep(2)
     
     print("✅ متجر مسلم يعمل بنجاح مع جميع الخدمات (فري فاير، تطبيقات، سوشل ميديا)")
     print("🚀 جاري تشغيل البوت...")
     
-    # بدء polling مع إعدادات مناسبة
+    # بدء polling
     bot.infinity_polling(timeout=60, long_polling_timeout=30)
